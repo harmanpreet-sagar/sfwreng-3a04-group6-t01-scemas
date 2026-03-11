@@ -1,0 +1,66 @@
+# Operating System
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# Compiled Diagrams (optional - uncomment if you want to regenerate from source)
+# docs/diagrams/compiled/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Node.js (if using JavaScript/TypeScript)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnpm-debug.log*
+
+# Python (if using Python)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+*.egg-info/
+
+# Java (if using Java)
+*.class
+*.jar
+*.war
+target/
+.gradle/
+build/
+
+# Build artifacts
+dist/
+build/
+out/
+
+# Environment variables
+.env
+.env.local
+
+# Locks and caches
+*.lock
+.cache/
+
+# Word temporary files
+~$*.doc*
+~$*.xls*
+~$*.ppt*

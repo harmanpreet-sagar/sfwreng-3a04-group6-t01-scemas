@@ -1,0 +1,100 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam shadowing false
+skinparam linetype ortho
+
+'========================
+' Actors
+'========================
+actor "General Public" as Public
+actor "External Developer\n(Public API User)" as ExtDev
+actor "City Operator" as Operator
+actor "Government Admin" as GovAdmin
+actor "Data Analyst\n(SCEMAS)" as Analyst
+actor "Sensor Company" as SensorCo
+actor "Sensor Network\n(MQTT Devices)" as Sensors
+
+rectangle "SCEMAS" {
+
+  package "Telemetry Processing" {
+    usecase "Ingest Telemetry Data" as UC_Ingest
+    usecase "Aggregate Zone Metrics" as UC_Aggregate
+    usecase "Detect Threshold Violation" as UC_Detect
+    usecase "Flag Possible Faulty Sensor" as UC_Faulty
+  }
+
+  package "Alerting & Response" {
+    usecase "Generate Alert" as UC_GenAlert
+    usecase "View Active Alerts" as UC_ViewAlerts
+    usecase "Acknowledge Alert" as UC_Ack
+    usecase "View Alert History" as UC_History
+  }
+
+  package "Public Information" {
+    usecase "Update Public Metrics" as UC_UpdatePublic
+    usecase "View Public Dashboard\n(Zone-level summaries)" as UC_PublicDash
+  }
+
+  package "Threshold Management" {
+    usecase "Define / Update Alert Threshold" as UC_Thresholds
+  }
+
+  package "Public API" {
+    usecase "View API Documentation" as UC_APIDocs
+    usecase "Request Aggregated Data\n(Read-only Public API)" as UC_APIRequest
+    usecase "Authenticate API Client\n(Token/Key)" as UC_APIToken
+    usecase "Apply Rate Limiting" as UC_RateLimit
+    usecase "Return Structured Response" as UC_APIResp
+  }
+
+  package "Sensor Company" {
+    usecase "Submit Calibration/\nSensitivity Recommendation" as UC_SensorRec
+    usecase "Receive Maintenance Request" as UC_MaintReq
+  }
+}
+
+'========================
+' Actor associations
+'========================
+Sensors --> UC_Ingest
+
+Operator --> UC_ViewAlerts
+Operator --> UC_Ack
+Operator --> UC_History
+
+GovAdmin --> UC_Thresholds
+GovAdmin --> UC_History
+
+Analyst --> UC_History
+
+Public --> UC_PublicDash
+Public --> UC_APIDocs
+Public --> UC_APIRequest
+
+ExtDev --> UC_APIDocs
+ExtDev --> UC_APIRequest
+
+SensorCo --> UC_SensorRec
+SensorCo --> UC_MaintReq
+
+'========================
+' Includes / Extends (only the meaningful ones)
+'========================
+UC_Ingest ..> UC_Aggregate : <<include>>
+UC_Aggregate ..> UC_Detect : <<include>>
+
+UC_Detect ..> UC_GenAlert : <<include>>
+UC_Detect ..> UC_UpdatePublic : <<include>>
+UC_Detect ..> UC_Faulty : <<extend>>
+
+UC_UpdatePublic ..> UC_PublicDash : <<include>>
+
+UC_Ack ..> UC_ViewAlerts : <<extend>>
+
+UC_APIRequest ..> UC_APIToken : <<include>>
+UC_APIRequest ..> UC_RateLimit : <<include>>
+UC_APIRequest ..> UC_APIResp : <<include>>
+
+@enduml
