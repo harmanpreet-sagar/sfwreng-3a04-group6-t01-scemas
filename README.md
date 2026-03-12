@@ -2,16 +2,33 @@
 
 Software Design III Project Repository
 
+## Course Information
+
+**Course:** SFWRENG 3A04 - Software Design III  
+**Term:** Winter 2026  
+**Institution:** McMaster University
+
+## Team
+
+Group 6 - Tutorial 01
+
+### Members
+
+- Aakash Satishkumar
+- Ali Shareeff
+- Harmanpreet Singh Sagar
+- Jason Kim
+- Praneet Singh
+
 ## Project Structure
 
-```
-├── docs/                      # All documentation and design artifacts
+```bash
+├── docs/                     # All documentation and design artifacts
 │   ├── diagrams/             # UML diagrams and design models
 │   │   ├── plantuml/         # PlantUML source files (.puml)
 │   │   │   ├── usecase/      # Use case diagrams
 │   │   │   ├── class/        # Class diagrams
 │   │   │   ├── sequence/     # Sequence diagrams
-│   │   │   ├── activity/     # Activity diagrams
 │   │   │   └── state/        # State diagrams
 │   │   ├── drawio/           # Draw.io source files
 │   │   └── compiled/         # Generated diagram images (PNG/SVG)
@@ -20,8 +37,6 @@ Software Design III Project Repository
 │       ├── screenshots/
 │       └── mockups/
 ├── src/                      # Source code (to be added)
-├── tests/                    # Test files
-└── scripts/                  # Build and utility scripts
 ```
 
 ## Getting Started
@@ -42,13 +57,3 @@ plantuml docs/diagrams/plantuml/usecase/usecase_diagram_2_revised.puml -o ../com
 # Compile all diagrams
 plantuml docs/diagrams/plantuml/**/*.puml -o ../compiled
 ```
-
-## Team
-
-Group 6 - Tutorial 01
-
-## Course Information
-
-**Course:** SFWRENG 3A04 - Software Design III  
-**Term:** Winter 2026  
-**Institution:** McMaster University
