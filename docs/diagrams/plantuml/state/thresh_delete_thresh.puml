@@ -1,0 +1,20 @@
+@startuml thresh_delete_threshold
+
+[*] --> Idle
+
+Idle --> ReceiveDeleteRequest : deleteThreshold(id)
+
+ReceiveDeleteRequest --> RetrieveThreshold
+
+RetrieveThreshold --> Error : threshold not found
+RetrieveThreshold --> DeleteThreshold : threshold found
+
+DeleteThreshold --> UpdateRepository
+
+UpdateRepository --> Success : deletion stored
+UpdateRepository --> Error : deletion failed
+
+Success --> Idle
+Error --> Idle
+
+@enduml
