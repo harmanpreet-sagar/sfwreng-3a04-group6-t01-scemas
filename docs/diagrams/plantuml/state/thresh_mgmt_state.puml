@@ -1,0 +1,26 @@
+@startuml threshold_mgmt_state
+
+[*] --> Idle
+
+Idle --> ReceiveRequest : user action
+
+ReceiveRequest --> ValidateInput
+
+ValidateInput --> Error : invalid data
+ValidateInput --> ProcessAction : valid data
+
+ProcessAction --> CreateThreshold : create
+ProcessAction --> UpdateThreshold : edit
+ProcessAction --> DeleteThreshold : delete
+
+CreateThreshold --> WriteToDB
+UpdateThreshold --> WriteToDB
+DeleteThreshold --> WriteToDB
+
+WriteToDB --> Success
+WriteToDB --> Error : db failure
+
+Success --> Idle
+Error --> Idle
+
+@enduml
