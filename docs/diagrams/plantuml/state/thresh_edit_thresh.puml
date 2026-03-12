@@ -1,0 +1,19 @@
+@startuml thresh_edit_thresh
+
+[*] --> Idle
+
+Idle --> LoadThreshold : select threshold to edit
+LoadThreshold --> EditThreshold : threshold loaded
+LoadThreshold --> Error : threshold not found
+
+EditThreshold --> ValidateChanges : submit changes
+ValidateChanges --> Error : invalid input
+ValidateChanges --> SaveThreshold : valid input
+
+SaveThreshold --> Success : update stored
+SaveThreshold --> Error : update failed
+
+Success --> Idle
+Error --> Idle
+
+@enduml
