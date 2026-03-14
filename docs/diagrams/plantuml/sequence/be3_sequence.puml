@@ -12,8 +12,10 @@ participant "Dashboard" as Dash
 
 actor Operator
 
+activate Sensor
 Sensor -> API : Send Telemetry
 activate API
+deactivate Sensor
 
 API -> Agg : Forward Sensor Data
 activate Agg
@@ -41,15 +43,20 @@ deactivate DB
 Alerts -> Dash : Notify Alert
 activate Dash
 
+activate Operator
 Dash -> Operator : Display Alert
-
 Operator -> Dash : Acknowledge Alert
+
 Dash -> Alerts : Update Status
+
 Alerts -> DB : Update Alert Record
+
 activate DB
 DB --> Alerts : Alert Record Updated
 deactivate DB
+
 Alerts --> Dash : Alert Status Updated
+deactivate Alerts
 Dash --> Operator : Acknowledgement Confirmed
 deactivate Dash
 
