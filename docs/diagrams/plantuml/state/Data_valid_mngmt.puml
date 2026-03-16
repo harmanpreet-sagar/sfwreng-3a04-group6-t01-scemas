@@ -1,0 +1,20 @@
+@startuml data_validation_mgmt_state
+
+[*] --> Idle
+
+Idle --> ReceiveSensorData : incoming sensor packet
+
+ReceiveSensorData --> EnsureMQTTCompliance
+
+EnsureMQTTCompliance --> ProtocolError : invalid MQTT format
+EnsureMQTTCompliance --> SensorMonitor : protocol valid
+
+SensorMonitor --> ValidationError : abnormal data
+SensorMonitor --> StoreValidatedData : data valid
+
+StoreValidatedData --> Idle : data stored
+
+ProtocolError --> Idle
+ValidationError --> Idle
+
+@enduml

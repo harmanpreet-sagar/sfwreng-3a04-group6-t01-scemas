@@ -1,0 +1,18 @@
+@startuml sensor_monitor_state
+
+[*] --> Idle
+
+Idle --> ReceiveSensorData : data received
+
+ReceiveSensorData --> AnalyzeSensorData
+
+AnalyzeSensorData --> AbnormalData : anomaly detected
+AnalyzeSensorData --> DataValid : within expected range
+
+DataValid --> Success
+AbnormalData --> ReportAnomaly
+
+ReportAnomaly --> Idle
+Success --> Idle
+
+@enduml

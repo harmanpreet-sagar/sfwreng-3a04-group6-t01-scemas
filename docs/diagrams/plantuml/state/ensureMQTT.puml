@@ -1,0 +1,20 @@
+@startuml ensure_mqtt_compliance_state
+
+[*] --> Idle
+
+Idle --> ReceivePacket : packet received
+
+ReceivePacket --> ParseMQTTPacket
+
+ParseMQTTPacket --> ProtocolError : parsing failed
+ParseMQTTPacket --> ValidateMQTTFormat : packet parsed
+
+ValidateMQTTFormat --> ProtocolError : invalid MQTT format
+ValidateMQTTFormat --> LogValidationEvent : protocol valid
+
+LogValidationEvent --> Success
+
+Success --> Idle
+ProtocolError --> Idle
+
+@enduml

@@ -1,0 +1,15 @@
+@startuml store_validated_data_state
+
+[*] --> Idle
+
+Idle --> ReceiveValidatedData : validated data received
+
+ReceiveValidatedData -->  WriteToDB
+
+WriteToDB --> Success : data stored
+WriteToDB --> StorageError : db failure
+
+Success --> Idle
+StorageError --> Idle
+
+@enduml
