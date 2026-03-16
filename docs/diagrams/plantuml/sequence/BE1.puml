@@ -1,0 +1,25 @@
+@startuml BE1_Login
+
+activate User
+
+User -> SCEMAS ++ : select Log In
+SCEMAS --> User : display login screen
+
+User -> UserAuth ++ : enter credentials
+UserAuth -> AccountManagement ++ : verify credentials
+AccountManagement -> AccountDB ++ : check credentials
+AccountDB --> AccountManagement -- : confirm valid credentials
+
+AccountManagement -> AccountManagement : detect role
+AccountManagement -> AccountManagement : request additional authentication if needed
+AccountManagement -> AccountManagement : grant access based on RBAC
+AccountManagement -> Dashboard ++ : load correct dashboard
+Dashboard --> AccountManagement -- : dashboard ready
+
+AccountManagement -> AuditLog ++ : record login event
+AuditLog --> AccountManagement -- : confirm log saved
+
+AccountManagement --> UserAuth -- : confirm login
+UserAuth --> User -- : redirect to correct dashboard
+
+@enduml

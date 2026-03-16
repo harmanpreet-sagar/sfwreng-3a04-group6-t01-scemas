@@ -1,0 +1,23 @@
+@startuml BE4_CreateAccount
+
+activate User
+
+User -> SCEMAS ++ : select Create Account
+SCEMAS --> User : display appropriate account creation page
+
+User -> UserAuth ++ : enter required information
+UserAuth -> AccountManagement ++ : validate inputs
+AccountManagement -> AccountManagement : detect requested role
+AccountManagement -> AccountManagement : send approval request if needed
+AccountManagement -> AccountManagement : verify approval succeeds
+AccountManagement -> AccountDB ++ : create account
+AccountDB --> AccountManagement -- : confirm account created
+
+AccountManagement -> AccountManagement : assign RBAC permissions
+AccountManagement -> AuditLog ++ : record account creation event
+AuditLog --> AccountManagement -- : confirm log saved
+
+AccountManagement --> UserAuth -- : confirm account creation
+UserAuth --> User -- : prompt user to Log In
+
+@enduml
