@@ -1,0 +1,44 @@
+@startuml
+
+class DataValidationManagement {
+  + validateIncomingData(): void
+  + coordinateValidation(): void
+}
+
+class EnsureMQTTCompliance {
+  + parsePacket(): boolean
+  + validateMQTTFormat(): boolean
+}
+
+class SensorMonitor {
+  + monitorSensorData(): void
+  + detectAnomalies(): boolean
+}
+
+class StoreValidatedData {
+  + storeData(): void
+  + sendToTimeSeriesDB(): void
+}
+
+class ValidationEventLog {
+  + logEvent(): void
+  + attachTimestamp(): void
+}
+
+class ValidSensorDataDB {
+  + store(): void
+  + retrieveHistoricalData(): List
+}
+
+' Relationships (kept simple like your teammate’s)
+
+DataValidationManagement -- EnsureMQTTCompliance
+DataValidationManagement -- SensorMonitor
+DataValidationManagement -- StoreValidatedData
+
+EnsureMQTTCompliance -- ValidationEventLog
+
+SensorMonitor -- ValidSensorDataDB
+StoreValidatedData -- ValidSensorDataDB
+
+@enduml
