@@ -1,0 +1,39 @@
+@startuml APIManagement
+
+class APIManagement {
+  + handleAPIRequest(): void
+  + validateRequest(): boolean
+  + enforceUsageControls(): boolean
+}
+
+class PublicAPIEndpoint {
+  + receiveRequest(): void
+  + returnResponse(): void
+}
+
+class RateLimiter {
+  + checkRateLimit(): boolean
+}
+
+class AccessControl {
+  + authorizeRequest(): boolean
+}
+
+class UsageLog {
+  + recordRequestMetadata(): void
+  + getRequestHistory(): List
+}
+
+class AggregatedEnvironmentalDataDB {
+  + getAggregatedEnvironmentalData(): List
+}
+
+APIManagement -- PublicAPIEndpoint
+APIManagement -- RateLimiter
+APIManagement -- AccessControl
+APIManagement -- UsageLog
+APIManagement -- AggregatedEnvironmentalDataDB
+RateLimiter -- UsageLog
+AccessControl -- UsageLog
+
+@enduml

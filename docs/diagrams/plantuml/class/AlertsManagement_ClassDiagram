@@ -1,0 +1,50 @@
+@startuml AlertManagement
+
+class AlertsManagement {
+  + evaluateValidatedReadings(): void
+  + createAlert(): void
+  + updateAlertStatus(): void
+  + publishAlertUpdate(): void
+}
+
+class AlertsDB {
+  + storeAlertDetails(): void
+  + getActiveAlerts(): List
+  + getHistoricalAlerts(): List
+}
+
+class NotificationService {
+  + sendAlertCreated(): void
+  + sendStatusChangeNotification(): void
+}
+
+class ThresholdDB {
+  + getActiveThresholdRules(): List
+}
+
+class AggregatedEnvironmentalDataDB {
+  + getAggregatedEnvironmentalData(): List
+}
+
+class ValidSensorDataDB {
+  + getValidatedSensorData(): List
+}
+
+class API_Facade {
+  + routeRequest(): void
+}
+
+class DashboardAgent {
+  + displayAlerts(): void
+  + refreshView(): void
+}
+
+AlertsManagement -- ThresholdDB
+AlertsManagement -- AggregatedEnvironmentalDataDB
+AlertsManagement -- AlertsDB
+AlertsManagement -- NotificationService
+AlertsManagement -- API_Facade
+AlertsManagement -- ValidSensorDataDB
+NotificationService -- DashboardAgent
+
+@enduml
