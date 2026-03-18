@@ -1,0 +1,32 @@
+@startuml BE1_Logins_StateChart
+hide empty description
+
+[*] --> displayLoginPage
+displayLoginPage : display login screen
+
+displayLoginPage --> verifyCredentials : credentials entered
+verifyCredentials : verify credentials
+
+verifyCredentials --> loginError : invalid credentials
+loginError : display error message
+loginError --> displayLoginPage : retry
+
+verifyCredentials --> classifyRole : valid credentials
+classifyRole : classify user role
+
+classifyRole --> requestAdditionalAuthentication : role has additional permissions
+requestAdditionalAuthentication : request extra authentication
+requestAdditionalAuthentication --> loginError : verification failed
+requestAdditionalAuthentication --> grantAccess : verification succeeded
+
+classifyRole --> grantAccess : standard role
+grantAccess : grant access based on RBAC permissions
+
+grantAccess --> redirectDashboard
+redirectDashboard : redirect to correct dashboard
+
+redirectDashboard --> recordLoginEvent
+recordLoginEvent : record login event in audit logs
+
+recordLoginEvent --> [*]
+@enduml
