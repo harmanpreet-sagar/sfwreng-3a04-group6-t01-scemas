@@ -1,0 +1,56 @@
+@startuml APIFacade_ClassDiagram
+
+class APIFacade {
+  +apiRequest(req : Request)
+  +validateRequest(req : Request) : Boolean
+  +authorizeRequest(req : Request) : Boolean
+  +dispatchRequest(req : Request) : Result
+  +formatResponse(result : Result) : Response
+  +returnResponse(resp : Response)
+}
+
+class AccountAdminAgent {
+  +initiateAccountOperation(req : Request)
+}
+
+class ThresholdAdminAgent {
+  +initiateThresholdOperation(req : Request)
+}
+
+class DashboardAgent {
+  +displayData(data : Map)
+  +displayAlert(alert : Alert)
+}
+
+class ThresholdManagement {
+  +receiveRequest(action : String)
+  +validateInput(data : Map) : Boolean
+  +processAction(action : String, data : Map)
+}
+
+class AccountManagement {
+  +login(credentials : Map) : Boolean
+  +changeCredentials(data : Map)
+  +deactivateAccount(id : int)
+}
+
+class AlertsManagement {
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+}
+
+class AggregationManagement {
+  +performAggregations()
+  +sendToDashboard(data : Map)
+}
+
+AccountAdminAgent --> APIFacade : sends request to
+ThresholdAdminAgent --> APIFacade : sends request to
+DashboardAgent --> APIFacade : sends request to
+APIFacade --> ThresholdManagement : routes to
+APIFacade --> AccountManagement : routes to
+APIFacade --> AlertsManagement : routes to
+APIFacade --> AggregationManagement : routes to
+
+@enduml
