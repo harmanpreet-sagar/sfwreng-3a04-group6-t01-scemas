@@ -1,0 +1,78 @@
+@startuml ThresholdManagement_ClassDiagram
+
+class HighLevelUI {
+  +displayThresholds()
+  +displayForm()
+  +displayConfirmation()
+  +displayError(msg : String)
+}
+
+class APIFacade {
+  +routeToThresholdMgmt(req : Request)
+}
+
+class ThresholdManagement {
+  +receiveRequest(action : String)
+  +validateInput(data : Map) : Boolean
+  +processAction(action : String, data : Map)
+}
+
+class CreateThreshold {
+  +inputThresholdData() : Map
+  +validateData(data : Map) : Boolean
+  +createThreshold(data : Map) : Threshold
+  +saveThreshold(t : Threshold)
+}
+
+class EditThreshold {
+  +loadThreshold(id : int) : Threshold
+  +editThreshold(t : Threshold, changes : Map)
+  +validateChanges(changes : Map) : Boolean
+  +saveThreshold(t : Threshold)
+}
+
+class DeleteThreshold {
+  +receiveDeleteRequest(id : int)
+  +retrieveThreshold(id : int) : Threshold
+  +deleteThreshold(t : Threshold)
+  +updateRepository(id : int)
+}
+
+class Threshold {
+  -id : int
+  -metricType : String
+  -zone : String
+  -condition : String
+  -severityLevel : String
+  -isActive : Boolean
+  -createdAt : DateTime
+  -updatedAt : DateTime
+  +activate()
+  +deactivate()
+  +getDetails() : Map
+}
+
+class ThresholdDB {
+  +save(t : Threshold)
+  +update(t : Threshold)
+  +delete(id : int)
+  +findById(id : int) : Threshold
+  +findAll() : List<Threshold>
+  +findActive() : List<Threshold>
+}
+
+class AlertsManagement {
+}
+
+HighLevelUI --> ThresholdManagement : uses
+APIFacade --> ThresholdManagement : routes to
+ThresholdManagement --> CreateThreshold : delegates
+ThresholdManagement --> EditThreshold : delegates
+ThresholdManagement --> DeleteThreshold : delegates
+CreateThreshold ..> ThresholdDB : accesses
+EditThreshold ..> ThresholdDB : accesses
+DeleteThreshold ..> ThresholdDB : accesses
+ThresholdDB *-- Threshold : stores
+ThresholdDB --> AlertsManagement : supplies thresholds to
+
+@enduml
