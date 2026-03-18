@@ -1,39 +1,59 @@
 @startuml APIManagement
 
-class APIManagement {
-  + handleAPIRequest(): void
-  + validateRequest(): boolean
-  + enforceUsageControls(): boolean
+class APIManagement <<controller>> {
+  + processReadOnlyRequest(request: APIRequest): APIResponse
+  + validateRequest(request: APIRequest): boolean
+  + enforceRateLimit(request: APIRequest): boolean
+  + fetchAggregatedData(zoneId: String, metric: String): List
+  + buildSuccessResponse(data: List): APIResponse
+  + buildErrorResponse(message: String): APIResponse
 }
 
-class PublicAPIEndpoint {
-  + receiveRequest(): void
-  + returnResponse(): void
+class PublicAPIEndpoint <<boundary>> {
+  + receiveRequest(request: APIRequest): void
+  + returnResponse(response: APIResponse): void
 }
 
-class RateLimiter {
-  + checkRateLimit(): boolean
+class RateLimiter <<controller>> {
+  + checkRateLimit(userId: String): boolean
 }
 
-class AccessControl {
-  + authorizeRequest(): boolean
+class AccessControl <<controller>> {
+  + authorizeRequest(request: APIRequest): boolean
 }
 
-class UsageLog {
-  + recordRequestMetadata(): void
-  + getRequestHistory(): List
+class UsageLog <<entity>> {
+  + recordRequestMetadata(request: APIRequest): void
+  + getuserRequestHistory(userId: String): List
+  + recordRateLimitViolation(userId: String): void
 }
 
-class AggregatedEnvironmentalDataDB {
-  + getAggregatedEnvironmentalData(): List
+class AggregatedEnvironmentalDataDB <<entity>> {
+  + getAggregatedEnvironmentalData(zoneId: String, metric: String): List
 }
 
-APIManagement -- PublicAPIEndpoint
-APIManagement -- RateLimiter
-APIManagement -- AccessControl
-APIManagement -- UsageLog
-APIManagement -- AggregatedEnvironmentalDataDB
-RateLimiter -- UsageLog
-AccessControl -- UsageLog
+class APIRequest {
+  - userId: String
+  - endpoint: String
+  - zoneId: String
+  - metric: String
+  - timestamp: DateTime
+}
+
+class APIResponse {
+  - statusCode: int
+  - message: String
+  - data: List
+}
+
+PublicAPIEndpoint --> APIManagement
+APIManagement --> RateLimiter
+APIManagement --> AccessControl
+APIManagement --> UsageLog
+APIManagement --> AggregatedEnvironmentalDataDB
+RateLimiter --> UsageLog
+AccessControl --> UsageLog
+PublicAPIEndpoint --> APIRequest
+PublicAPIEndpoint --> APIResponse
 
 @enduml
