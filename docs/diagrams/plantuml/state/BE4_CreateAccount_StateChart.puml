@@ -1,0 +1,37 @@
+@startuml BE4_CreateAccount_StateChart
+hide empty description
+
+[*] --> displayCreateAccountPage
+displayCreateAccountPage : display relevant account creation page
+
+displayCreateAccountPage --> validateInputs : required information entered
+validateInputs : validate account information
+
+validateInputs --> accountError : information is missing or invalid
+accountError : display error message
+accountError --> displayCreateAccountPage : retry
+
+validateInputs --> checkRoleRequirements : inputs valid
+checkRoleRequirements : determine requested role requirements
+
+checkRoleRequirements --> requestVerification : role requires verification
+requestVerification : send request for verification
+
+requestVerification --> recordFailureEvent : verification fails
+recordFailureEvent : record failure in audit logs
+recordFailureEvent --> accountError : notify user
+
+requestVerification --> createAccount : verification succeeds
+checkRoleRequirements --> createAccount : no verification required
+
+createAccount : create account with role and RBAC permissions
+createAccount --> recordFailureEvent : account creation fails
+createAccount --> confirmAccountCreation : account created
+
+confirmAccountCreation : confirm account creation and prompt Log In
+confirmAccountCreation --> recordAccountCreationEvent
+
+recordAccountCreationEvent : record account creation event in audit logs
+recordAccountCreationEvent --> [*]
+
+@enduml
