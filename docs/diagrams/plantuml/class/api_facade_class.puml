@@ -22,6 +22,29 @@ class DashboardAgent {
   +displayAlert(alert : Alert)
 }
 
+interface IThresholdService {
+  +receiveRequest(action : String)
+  +validateInput(data : Map) : Boolean
+  +processAction(action : String, data : Map)
+}
+
+interface IAccountService {
+  +login(credentials : Map) : Boolean
+  +changeCredentials(data : Map)
+  +deactivateAccount(id : int)
+}
+
+interface IAlertsService {
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+}
+
+interface IAggregationService {
+  +performAggregations()
+  +sendToDashboard(data : Map)
+}
+
 class ThresholdManagement {
   +receiveRequest(action : String)
   +validateInput(data : Map) : Boolean
@@ -48,9 +71,13 @@ class AggregationManagement {
 AccountAdminAgent --> APIFacade : sends request to
 ThresholdAdminAgent --> APIFacade : sends request to
 DashboardAgent --> APIFacade : sends request to
-APIFacade --> ThresholdManagement : routes to
-APIFacade --> AccountManagement : routes to
-APIFacade --> AlertsManagement : routes to
-APIFacade --> AggregationManagement : routes to
+APIFacade --> IThresholdService : routes to
+APIFacade --> IAccountService : routes to
+APIFacade --> IAlertsService : routes to
+APIFacade --> IAggregationService : routes to
+ThresholdManagement ..|> IThresholdService : implements
+AccountManagement ..|> IAccountService : implements
+AlertsManagement ..|> IAlertsService : implements
+AggregationManagement ..|> IAggregationService : implements
 
 @enduml

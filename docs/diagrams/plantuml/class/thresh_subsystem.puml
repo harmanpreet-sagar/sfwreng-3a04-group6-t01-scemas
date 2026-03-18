@@ -38,7 +38,25 @@ class DeleteThreshold {
   +updateRepository(id : int)
 }
 
-class Threshold {
+interface IThresholdRepository {
+  +save(t : Threshold)
+  +update(t : Threshold)
+  +delete(id : int)
+  +findById(id : int) : Threshold
+  +findAll() : List<Threshold>
+  +findActive() : List<Threshold>
+}
+
+entity ThresholdDB {
+  +save(t : Threshold)
+  +update(t : Threshold)
+  +delete(id : int)
+  +findById(id : int) : Threshold
+  +findAll() : List<Threshold>
+  +findActive() : List<Threshold>
+}
+
+entity Threshold {
   -id : int
   -metricType : String
   -zone : String
@@ -52,15 +70,6 @@ class Threshold {
   +getDetails() : Map
 }
 
-class ThresholdDB {
-  +save(t : Threshold)
-  +update(t : Threshold)
-  +delete(id : int)
-  +findById(id : int) : Threshold
-  +findAll() : List<Threshold>
-  +findActive() : List<Threshold>
-}
-
 class AlertsManagement {
 }
 
@@ -69,9 +78,10 @@ APIFacade --> ThresholdManagement : routes to
 ThresholdManagement --> CreateThreshold : delegates
 ThresholdManagement --> EditThreshold : delegates
 ThresholdManagement --> DeleteThreshold : delegates
-CreateThreshold ..> ThresholdDB : accesses
-EditThreshold ..> ThresholdDB : accesses
-DeleteThreshold ..> ThresholdDB : accesses
+CreateThreshold ..> IThresholdRepository : uses
+EditThreshold ..> IThresholdRepository : uses
+DeleteThreshold ..> IThresholdRepository : uses
+ThresholdDB ..|> IThresholdRepository : implements
 ThresholdDB *-- Threshold : stores
 ThresholdDB --> AlertsManagement : supplies thresholds to
 
