@@ -1,50 +1,71 @@
-@startuml AlertManagement
+@startuml AlertsManagement
 
-class AlertsManagement {
-  + evaluateValidatedReadings(): void
-  + createAlert(): void
-  + updateAlertStatus(): void
-  + publishAlertUpdate(): void
+class AlertsManagement <<controller>> {
+  + evaluateThresholdViolations(): void
+  + detectAnomalousTrends(): void
+  + createAlert(alert: Alert): void
+  + updateAlertStatus(alertId: String, newStatus: AlertStatus): void
+  + publishAlertUpdate(alert: Alert): void
 }
 
-class AlertsDB {
-  + storeAlertDetails(): void
-  + getActiveAlerts(): List
-  + getHistoricalAlerts(): List
+class Alert <<entity>> {
+  - alertId: String
+  - severity: String
+  - message: String
+  - status: AlertStatus
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  - zone: String
+  - metric: String
+  - sourceType: String
 }
 
-class NotificationService {
-  + sendAlertCreated(): void
-  + sendStatusChangeNotification(): void
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
 }
 
-class ThresholdDB {
+class AlertsDB <<entity>> {
+  + storeAlert(alert: Alert): void
+  + updateAlert(alert: Alert): void
+  + getActiveAlerts(): List<Alert>
+  + getHistoricalAlerts(): List<Alert>
+}
+
+class NotificationService <<controller>> {
+  + sendAlertCreated(alert: Alert): void
+  + sendStatusChangeNotification(alert: Alert): void
+}
+
+class ThresholdDB <<entity>> {
   + getActiveThresholdRules(): List
 }
 
-class AggregatedEnvironmentalDataDB {
+class AggregatedEnvironmentalDataDB <<entity>> {
   + getAggregatedEnvironmentalData(): List
 }
 
-class ValidSensorDataDB {
+class ValidSensorDataDB <<entity>> {
   + getValidatedSensorData(): List
 }
 
-class API_Facade {
+class API_Facade <<controller>> {
   + routeRequest(): void
 }
 
-class DashboardAgent {
+class DashboardAgent <<boundary>> {
   + displayAlerts(): void
   + refreshView(): void
 }
 
-AlertsManagement -- ThresholdDB
-AlertsManagement -- AggregatedEnvironmentalDataDB
-AlertsManagement -- AlertsDB
-AlertsManagement -- NotificationService
-AlertsManagement -- API_Facade
-AlertsManagement -- ValidSensorDataDB
-NotificationService -- DashboardAgent
+AlertsManagement --> ThresholdDB
+AlertsManagement --> AggregatedEnvironmentalDataDB
+AlertsManagement --> ValidSensorDataDB
+AlertsManagement --> AlertsDB
+AlertsManagement --> NotificationService
+AlertsManagement --> API_Facade
+AlertsDB --> Alert
+NotificationService --> DashboardAgent
 
 @enduml
