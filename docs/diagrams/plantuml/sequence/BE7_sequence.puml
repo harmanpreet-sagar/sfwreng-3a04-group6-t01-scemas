@@ -6,8 +6,6 @@ participant OperationalDashboard
 participant Alerts
 database "Alerts DB" as DB
 
-activate User
-
 User -> UserAuth ++ : enter credentials
 UserAuth -> OperationalDashboard ++ : authenticate user
 OperationalDashboard --> UserAuth -- : authentication result
@@ -22,11 +20,13 @@ DB --> Alerts -- : violations list
 Alerts --> OperationalDashboard -- : return violations
 OperationalDashboard --> User -- : display violations
 
-
-User -> OperationalDashboard : act on violation
-OperationalDashboard -> Alerts : update violation status
+User -> OperationalDashboard ++ : act on violation
+OperationalDashboard -> Alerts ++ : update violation status
 
 Alerts -> DB ++ : update violation record
 DB --> Alerts -- : record updated
-@enduml
 
+Alerts --> OperationalDashboard -- : update confirmed
+OperationalDashboard --> User -- : confirmation displayed
+
+@enduml

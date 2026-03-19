@@ -6,29 +6,25 @@ participant OperationalDashboard
 participant TrendsAnalytics
 database "DB" as DB
 
-activate User
-
 User -> UserAuth ++ : enter credentials
 UserAuth -> OperationalDashboard ++ : authenticate user
 OperationalDashboard --> UserAuth -- : authentication result
 UserAuth --> User -- : access granted
 
 User -> OperationalDashboard ++ : access dashboard
-OperationalDashboard --> User -- : display role-based options
+OperationalDashboard --> User : display role-based options
 
 OperationalDashboard -> TrendsAnalytics ++ : request trend data
-
 TrendsAnalytics -> DB ++ : fetch historical & real-time data
 DB --> TrendsAnalytics -- : return environmental data
-
 TrendsAnalytics --> OperationalDashboard -- : trend analytics data received
-OperationalDashboard --> User -- : display charts & data
 
-User -> OperationalDashboard : review data
-OperationalDashboard -> TrendsAnalytics : validate data status
+OperationalDashboard --> User : display charts & data
+deactivate OperationalDashboard
 
-TrendsAnalytics --> OperationalDashboard : Validation result
-OperationalDashboard --> User : indicate data validated
-
+User -> OperationalDashboard ++ : review data
+OperationalDashboard -> TrendsAnalytics ++ : validate data status
+TrendsAnalytics --> OperationalDashboard -- : validation result
+OperationalDashboard --> User -- : indicate data validated
 
 @enduml
