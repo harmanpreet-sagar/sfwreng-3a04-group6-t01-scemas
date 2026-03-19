@@ -1,0 +1,38 @@
+@startuml APIManagement_StateChart
+hide empty description
+
+state "receiveRequest\n----\nuserId\nendpoint\nzoneId\nmetric\ntimestamp\n----\nreceive API request" as receiveRequest
+
+state "validateRequest\n----\nrequestValid\nendpoint\nzoneId\nmetric\n----\nvalidate request parameters" as validateRequest
+
+state "authorizeRequest\n----\nuserId\nauthorizationGranted\n----\nauthorize request" as authorizeRequest
+
+state "checkRateLimit\n----\nuserId\nrateLimitAllowed\nrequestHistory\n----\ncheck rate limit" as checkRateLimit
+
+state "fetchAggregatedData\n----\nzoneId\nmetric\naggregatedData\n----\nretrieve aggregated environmental data" as fetchAggregatedData
+
+state "successResponse\n----\nresponse\n----\nreturn success response" as successResponse
+
+state "errorResponse\n----\nstatusCode\nresponse\n----\nreturn error response" as errorResponse
+
+[*] --> receiveRequest
+
+receiveRequest --> validateRequest : request submitted
+
+validateRequest --> errorResponse : invalid request
+validateRequest --> authorizeRequest : valid request
+
+authorizeRequest --> errorResponse : unauthorized
+authorizeRequest --> checkRateLimit : authorized
+
+checkRateLimit --> errorResponse : rate limit exceeded
+checkRateLimit --> fetchAggregatedData : allowed
+
+fetchAggregatedData --> successResponse : data retrieved
+fetchAggregatedData --> errorResponse : retrieval failed
+errorResponse --> [*]
+
+successResponse --> [*]
+
+
+@enduml

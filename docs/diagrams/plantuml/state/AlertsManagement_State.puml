@@ -1,0 +1,40 @@
+@startuml AlertsManagement_StateChart
+hide empty description
+
+state "Monitoring\n----\nvalidatedReadings\naggregatedData\nactiveThresholds\nstatusChangeRequest" as Monitoring : wait for validated data, aggregated data, or alert status updates
+
+state "EvaluateThresholdViolations\n----\nvalidatedReadings\nactiveThresholds\nthresholdViolationDetected" as EvaluateThresholdViolations : compare validated readings against active thresholds
+
+state "DetectAnomalousTrends\n----\naggregatedData\nanomalyDetected" as DetectAnomalousTrends : analyze aggregated environmental data for anomalous trends
+
+state "CreateAlert\n----\nalertDetails\nsourceType\nalertStatus = ACTIVE" as CreateAlert : create alert and store it in AlertsDB
+
+state "UpdateAlertStatus\n----\nalertId\nnewStatus\nupdatedAt" as UpdateAlertStatus : update alert status in AlertsDB
+
+state "PublishAlertUpdate\n----\nalert\nnotificationPayload" as PublishAlertUpdate : publish alert update and notify dashboard
+
+state "AlertError\n----\nfailedOperation\nerrorMessage" as AlertError : record failure and preserve monitoring flow
+
+[*] --> Monitoring
+
+Monitoring --> EvaluateThresholdViolations : validated sensor data received
+EvaluateThresholdViolations --> CreateAlert : threshold violation detected
+EvaluateThresholdViolations --> Monitoring : no threshold violation
+
+Monitoring --> DetectAnomalousTrends : aggregated data received
+DetectAnomalousTrends --> CreateAlert : anomalous trend detected
+DetectAnomalousTrends --> Monitoring : no anomalous trend
+
+CreateAlert --> PublishAlertUpdate : alert stored successfully
+CreateAlert --> AlertError : alert creation fails
+
+Monitoring --> UpdateAlertStatus : acknowledge request received
+UpdateAlertStatus --> PublishAlertUpdate : status updated
+UpdateAlertStatus --> AlertError : status update fails
+
+PublishAlertUpdate --> Monitoring : update published
+PublishAlertUpdate --> AlertError : notification fails
+
+AlertError --> Monitoring : retry
+
+@enduml
