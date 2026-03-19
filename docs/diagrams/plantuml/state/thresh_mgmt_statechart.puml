@@ -1,0 +1,46 @@
+@startuml thresh_mgmt_statechart
+hide empty description
+top to bottom direction
+
+state "ThresholdManagement\n----\naction\ndata\n----\nreceive and route threshold request" as ThresholdManagement
+
+state "HighLevelUI\n----\nthresholdList\n----\ndisplay thresholds to authorized user" as HighLevelUI
+
+state "CreateThreshold\n----\nmetricType\nzone\ncondition\nseverityLevel\n----\ncollect and validate new threshold data" as CreateThreshold
+
+state "EditThreshold\n----\nid\nthreshold\nchanges\n----\nload and modify existing threshold" as EditThreshold
+
+state "DeleteThreshold\n----\nid\nthreshold\nconfirmed\n----\nretrieve and confirm threshold for deletion" as DeleteThreshold
+
+state "ThresholdDB\n----\nthreshold\n----\npersist threshold change to repository" as ThresholdDB
+
+state "success\n----\nsuccess_message\n----\ndisplay success message" as success
+
+state "error\n----\nerror_message\n----\ndisplay error message" as error
+
+[*] --> ThresholdManagement
+
+ThresholdManagement --> HighLevelUI : processAction
+
+HighLevelUI --> CreateThreshold  : selectCreate
+HighLevelUI --> EditThreshold    : selectEdit
+HighLevelUI --> DeleteThreshold  : selectDelete
+
+CreateThreshold --> error        : [data invalid]
+CreateThreshold --> ThresholdDB  : [data valid]
+
+EditThreshold --> error          : [not found / changes invalid]
+EditThreshold --> ThresholdDB    : [found / changes valid]
+
+DeleteThreshold --> error        : [not found]
+DeleteThreshold --> ThresholdDB  : [confirmed]
+DeleteThreshold --> HighLevelUI  : cancel
+
+ThresholdDB --> success          : success
+ThresholdDB --> error            : failure
+
+error --> HighLevelUI            : retry
+success --> [*]
+error --> [*]
+
+@enduml
