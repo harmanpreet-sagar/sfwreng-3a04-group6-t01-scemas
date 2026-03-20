@@ -5,6 +5,9 @@ class ThresholdAdminAgent {
 }
 
 class APIFacade {
+  -req : Request
+  -result : Result
+  -resp : Response
   +apiRequest(req : Request)
   +validateRequest(req : Request) : Boolean
   +authorizeRequest(req : Request) : Boolean
@@ -14,6 +17,8 @@ class APIFacade {
 }
 
 interface IThresholdService {
+  -action : String
+  -data : Map
   +receiveRequest(action : String)
   +validateInput(data : Map) : Boolean
   +processAction(action : String, data : Map)
@@ -100,6 +105,11 @@ entity Threshold {
 }
 
 class AlertsManagement {
+  -data : Map
+  -violation : Map
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
 }
 
 ' Boundary → APIFacade
