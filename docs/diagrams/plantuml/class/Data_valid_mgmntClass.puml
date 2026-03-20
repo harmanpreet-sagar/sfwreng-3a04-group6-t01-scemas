@@ -33,13 +33,31 @@ class StoreValidatedData {
 }
 
 class ValidationEventLog {
-  + logEvent(): void
-  + attachTimestamp(): void
+  + logEvent(e : EventLog): void
+  + attachTimestamp(e : EventLog): void
+  + formatLog(e : EventLog): String
 }
 
 class ValidSensorDataDB {
   + store(): void
   + retrieveHistoricalData(): List
+}
+
+' ========================
+' NEW ENTITY
+' ========================
+
+entity EventLog {
+  -eventId : int
+  -eventType : String
+  -message : String
+  -source : String
+  -timestamp : DateTime
+  -status : String
+  
+  +createLog(eventType : String, message : String, source : String) : EventLog
+  +updateStatus(status : String)
+  +getDetails() : Map
 }
 
 ' ========================
@@ -57,11 +75,14 @@ IValidationComponent <|.. StoreValidatedData : implements
 DataValidationManagement --> IValidationComponent : uses / depends on
 
 ' ========================
-' Other relationships (labeled)
+' Relationships
 ' ========================
 
 EnsureMQTTCompliance --> ValidationEventLog : logs events
 SensorMonitor --> ValidSensorDataDB : reads historical data
 StoreValidatedData --> ValidSensorDataDB : stores validated data
+
+' NEW relationships for EventLog
+ValidationEventLog --> EventLog : creates / formats
 
 @enduml

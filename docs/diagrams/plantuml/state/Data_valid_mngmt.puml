@@ -1,20 +1,44 @@
-@startuml data_validation_mgmt_state
+@startuml data_validation_statechart
+hide empty description
+top to bottom direction
 
-[*] --> Idle
+state "DataValidationManagement\n----\nvalidateIncomingData\ncoordinateValidation\n----\nreceive and coordinate incoming data validation" as DataValidationManagement
 
-Idle --> ReceiveSensorData : incoming sensor packet
+state "EnsureMQTTCompliance\n----\nparsePacket\nvalidateMQTTFormat\n----\nparse and validate MQTT packet format" as EnsureMQTTCompliance
 
-ReceiveSensorData --> EnsureMQTTCompliance
+state "SensorMonitor\n----\nmonitorSensorData\ndetectAnomalies\n----\nmonitor sensor data and detect anomalies" as SensorMonitor
 
-EnsureMQTTCompliance --> ProtocolError : invalid MQTT format
-EnsureMQTTCompliance --> SensorMonitor : protocol valid
+state "StoreValidatedData\n----\nstoreData\nsendToTimeSeriesDB\n----\nstore validated data into system" as StoreValidatedData
 
-SensorMonitor --> ValidationError : abnormal data
-SensorMonitor --> StoreValidatedData : data valid
+state "ValidationEventLog\n----\nlogEvent\nattachTimestamp\n----\nlog validation events with timestamp" as ValidationEventLog
 
-StoreValidatedData --> Idle : data stored
+state "ValidSensorDataDB\n----\nstore\nretrieveHistoricalData\n----\npersist and retrieve validated sensor data" as ValidSensorDataDB
 
-ProtocolError --> Idle
-ValidationError --> Idle
+state "success\n----\nsuccess_message\n----\nvalidation and storage completed successfully" as success
+
+state "error\n----\nerror_message\n----\nvalidation or processing failure" as error
+
+[*] --> DataValidationManagement
+
+DataValidationManagement --> EnsureMQTTCompliance : validateIncomingData
+
+EnsureMQTTCompliance --> ValidationEventLog : logEvent
+EnsureMQTTCompliance --> error : invalid format
+EnsureMQTTCompliance --> SensorMonitor : valid format
+
+SensorMonitor --> ValidSensorDataDB : retrieveHistoricalData
+SensorMonitor --> error : anomaly detected
+SensorMonitor --> StoreValidatedData : no anomaly
+
+StoreValidatedData --> ValidSensorDataDB : storeData
+StoreValidatedData --> ValidationEventLog : logEvent
+StoreValidatedData --> success : stored successfully
+StoreValidatedData --> error : storage failure
+
+ValidationEventLog --> DataValidationManagement : continue
+
+error --> DataValidationManagement : retry
+success --> [*]
+error --> [*]
 
 @enduml
