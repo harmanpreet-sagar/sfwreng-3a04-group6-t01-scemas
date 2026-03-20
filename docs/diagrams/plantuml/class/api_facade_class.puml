@@ -1,12 +1,37 @@
 @startuml APIFacade_ClassDiagram
 
-class APIFacade {
-  +apiRequest(req : Request)
-  +validateRequest(req : Request) : Boolean
-  +authorizeRequest(req : Request) : Boolean
-  +dispatchRequest(req : Request) : Result
-  +formatResponse(result : Result) : Response
-  +returnResponse(resp : Response)
+class Request {
+  -endpoint : String
+  -userId : String
+  -role : String
+  -payload : Map
+  -timestamp : DateTime
+  -apiKey : String
+}
+
+class Result {
+  -success : Boolean
+  -data : Map
+  -errorMessage : String
+  -statusCode : int
+  -timestamp : DateTime
+}
+
+class Response {
+  -statusCode : int
+  -body : Map
+  -message : String
+  -timestamp : DateTime
+}
+
+class Alert {
+  -id : int
+  -severity : String
+  -zone : String
+  -metricType : String
+  -message : String
+  -timestamp : DateTime
+  -status : String
 }
 
 class AccountAdminAgent {
@@ -22,62 +47,122 @@ class DashboardAgent {
   +displayAlert(alert : Alert)
 }
 
+class APIFacade {
+  -req : Request
+  -result : Result
+  -resp : Response
+  +apiRequest(req : Request)
+  +validateRequest(req : Request) : Boolean
+  +authorizeRequest(req : Request) : Boolean
+  +dispatchRequest(req : Request) : Result
+  +formatResponse(result : Result) : Response
+  +returnResponse(resp : Response)
+}
+
 interface IThresholdService {
+  -action : String
+  -data : Map
   +receiveRequest(action : String)
   +validateInput(data : Map) : Boolean
   +processAction(action : String, data : Map)
 }
 
 interface IAccountService {
+  -credentials : Map
+  -data : Map
   +login(credentials : Map) : Boolean
   +changeCredentials(data : Map)
   +deactivateAccount(id : int)
 }
 
 interface IAlertsService {
+  -data : Map
+  -violation : Map
   +evaluateTelemetry(data : Map)
   +generateAlert(violation : Map) : Alert
   +updateAlertStatus(id : int, status : String)
 }
 
 interface IAggregationService {
+  -data : Map
   +performAggregations()
   +sendToDashboard(data : Map)
 }
 
 class ThresholdManagement {
+  -action : String
+  -data : Map
   +receiveRequest(action : String)
   +validateInput(data : Map) : Boolean
   +processAction(action : String, data : Map)
 }
 
 class AccountManagement {
+  -credentials : Map
+  -data : Map
   +login(credentials : Map) : Boolean
   +changeCredentials(data : Map)
   +deactivateAccount(id : int)
 }
 
 class AlertsManagement {
+  -data : Map
+  -violation : Map
   +evaluateTelemetry(data : Map)
   +generateAlert(violation : Map) : Alert
   +updateAlertStatus(id : int, status : String)
 }
 
 class AggregationManagement {
+  -data : Map
   +performAggregations()
   +sendToDashboard(data : Map)
 }
 
-AccountAdminAgent --> APIFacade : sends request to
+class successResponse {
+  -result : Result
+  -resp : Response
+  +formatAndReturnSuccessResponse()
+}
+
+class errorResponse {
+  -statusCode : int
+  -resp : Response
+  +formatAndReturnErrorResponse()
+}
+
+' Custom type dependencies
+AccountAdminAgent ..> Request   : uses
+ThresholdAdminAgent ..> Request : uses
+DashboardAgent ..> Alert        : uses
+APIFacade ..> Request           : uses
+APIFacade ..> Result            : uses
+APIFacade ..> Response          : uses
+IAlertsService ..> Alert        : uses
+AlertsManagement ..> Alert      : uses
+successResponse ..> Result      : uses
+successResponse ..> Response    : uses
+errorResponse ..> Response      : uses
+
+' Agents send requests to APIFacade
+AccountAdminAgent   --> APIFacade : sends request to
 ThresholdAdminAgent --> APIFacade : sends request to
-DashboardAgent --> APIFacade : sends request to
-APIFacade --> IThresholdService : routes to
-APIFacade --> IAccountService : routes to
-APIFacade --> IAlertsService : routes to
+DashboardAgent      --> APIFacade : sends request to
+
+' APIFacade routes to service interfaces
+APIFacade --> IThresholdService   : routes to
+APIFacade --> IAccountService     : routes to
+APIFacade --> IAlertsService      : routes to
 APIFacade --> IAggregationService : routes to
-ThresholdManagement ..|> IThresholdService : implements
-AccountManagement ..|> IAccountService : implements
-AlertsManagement ..|> IAlertsService : implements
+
+' APIFacade produces success or error response
+APIFacade ..> successResponse : returns
+APIFacade ..> errorResponse   : returns
+
+' Concrete classes implement service interfaces
+ThresholdManagement   ..|> IThresholdService   : implements
+AccountManagement     ..|> IAccountService     : implements
+AlertsManagement      ..|> IAlertsService      : implements
 AggregationManagement ..|> IAggregationService : implements
 
 @enduml
