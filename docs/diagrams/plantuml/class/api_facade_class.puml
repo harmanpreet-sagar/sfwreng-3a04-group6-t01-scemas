@@ -34,20 +34,20 @@ class Alert {
   -status : String
 }
 
-class AccountAdminAgent <<boundary>> {
+class AccountAdminAgent {
   +initiateAccountOperation(req : Request)
 }
 
-class ThresholdAdminAgent <<boundary>> {
+class ThresholdAdminAgent {
   +initiateThresholdOperation(req : Request)
 }
 
-class DashboardAgent <<boundary>> {
+class DashboardAgent {
   +displayData(data : Map)
   +displayAlert(alert : Alert)
 }
 
-class APIFacade <<controller>> {
+class APIFacade {
   -req : Request
   -result : Result
   -resp : Response
@@ -89,7 +89,7 @@ interface IAggregationService {
   +sendToDashboard(data : Map)
 }
 
-class ThresholdManagement <<controller>> {
+class ThresholdManagement {
   -action : String
   -data : Map
   +receiveRequest(action : String)
@@ -97,7 +97,7 @@ class ThresholdManagement <<controller>> {
   +processAction(action : String, data : Map)
 }
 
-class AccountManagement <<controller>> {
+class AccountManagement {
   -credentials : Map
   -data : Map
   +login(credentials : Map) : Boolean
@@ -105,7 +105,7 @@ class AccountManagement <<controller>> {
   +deactivateAccount(id : int)
 }
 
-class AlertsManagement <<controller>> {
+class AlertsManagement {
   -data : Map
   -violation : Map
   +evaluateTelemetry(data : Map)
@@ -113,7 +113,7 @@ class AlertsManagement <<controller>> {
   +updateAlertStatus(id : int, status : String)
 }
 
-class AggregationManagement <<controller>> {
+class AggregationManagement {
   -data : Map
   +performAggregations()
   +sendToDashboard(data : Map)
