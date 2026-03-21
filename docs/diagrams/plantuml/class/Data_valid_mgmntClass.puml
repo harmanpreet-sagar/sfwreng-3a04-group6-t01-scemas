@@ -64,9 +64,9 @@ entity EventLog {
 ' Interface Implementation
 ' ========================
 
-IValidationComponent <|.. EnsureMQTTCompliance : implements
-IValidationComponent <|.. SensorMonitor : implements
-IValidationComponent <|.. StoreValidatedData : implements
+IValidationComponent <|.. EnsureMQTTCompliance
+IValidationComponent <|.. SensorMonitor
+IValidationComponent <|.. StoreValidatedData
 
 ' ========================
 ' Controller depends on interface
