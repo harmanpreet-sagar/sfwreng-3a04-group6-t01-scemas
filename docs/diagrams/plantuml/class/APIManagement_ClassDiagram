@@ -18,7 +18,7 @@ class RateLimiter {
   + checkRateLimit(userId: String): boolean
 }
 
-class AccessControl <<controller>> {
+class AccessControl {
   + authorizeRequest(request: APIRequest): boolean
 }
 
