@@ -22,7 +22,7 @@ class AccessControl <<controller>> {
   + authorizeRequest(request: APIRequest): boolean
 }
 
-class UsageLog <<entity>> {
+entity UsageLog {
   + recordRequestMetadata(request: APIRequest): void
   + getuserRequestHistory(userId: String): List
   + recordRateLimitViolation(userId: String): void
