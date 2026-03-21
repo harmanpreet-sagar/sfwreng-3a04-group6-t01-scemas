@@ -8,7 +8,7 @@ class AlertsManagement <<controller>> {
   + publishAlertUpdate(alert: Alert): void
 }
 
-class Alert <<entity>> {
+entity Alert {
   - alertId: String
   - severity: String
   - message: String
