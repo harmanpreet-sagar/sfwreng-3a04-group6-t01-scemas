@@ -72,7 +72,7 @@ IValidationComponent <|.. StoreValidatedData
 ' Controller depends on interface
 ' ========================
 
-DataValidationManagement --> IValidationComponent : uses / depends on
+DataValidationManagement --> IValidationComponent
 
 ' ========================
 ' Relationships
