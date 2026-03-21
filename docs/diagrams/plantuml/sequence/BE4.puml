@@ -2,22 +2,39 @@
 
 activate User
 
-User -> SCEMAS ++ : select Create Account
+User -> SCEMAS : select Create Account
+activate SCEMAS
 SCEMAS --> User : display appropriate account creation page
+deactivate SCEMAS
 
-User -> UserAuth ++ : enter required information
-UserAuth -> AccountManagement ++ : validate inputs
+User -> UserAuth : enter required information
+activate UserAuth
+
+UserAuth -> AccountManagement : validate inputs
+activate AccountManagement
+
 AccountManagement -> AccountManagement : detect requested role
 AccountManagement -> AccountManagement : send approval request if needed
 AccountManagement -> AccountManagement : verify approval succeeds
-AccountManagement -> AccountDB ++ : create account
-AccountDB --> AccountManagement -- : confirm account created
+
+AccountManagement -> AccountDB : create account
+activate AccountDB
+AccountDB --> AccountManagement : confirm account created
+deactivate AccountDB
 
 AccountManagement -> AccountManagement : assign RBAC permissions
-AccountManagement -> AuditLog ++ : record account creation event
-AuditLog --> AccountManagement -- : confirm log saved
 
-AccountManagement --> UserAuth -- : confirm account creation
-UserAuth --> User -- : prompt user to Log In
+AccountManagement -> AuditLog : record account creation event
+activate AuditLog
+AuditLog --> AccountManagement : confirm log saved
+deactivate AuditLog
+
+AccountManagement --> UserAuth : confirm account creation
+deactivate AccountManagement
+
+UserAuth --> User : prompt user to Log In
+deactivate UserAuth
+
+deactivate User
 
 @enduml
