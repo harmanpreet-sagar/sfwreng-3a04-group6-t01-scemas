@@ -1,36 +1,11 @@
-# State Diagrams
+# State Charts
 
-## Responsibilities
-
-### Aakash Satishkumar
-
-- Alerts Management
-- Notification Service
-- API Management
-
-### Ali Shareeff
-
-- Validation Management
-- Ensure MQTT Compliance
-- Store Validated Data
-- Sensor Monitor
-
-### Harmanpreet Singh Sagar
-
-- Threshold Management
-- Editing Existing Thresholds
-- Creating Thresholds
-- Deleting Thresholds
-
-### Jason Kim
-
-- Account Management
-- Logins
-- Change Username or Password
-- Deactivate Account
-
-### Praneet Singh
-
-- Aggregation Management
-- Perform Aggregations
-- Show data to dashboards
+| State Chart | Author |
+| - | - |
+| Alerts Management | Aakash Satishkumar |
+| API Management | Aakash Satishkumar |
+| Data Validation Management | Ali Shareeff |
+| Threshold Management | Harmanpreet Singh Sagar |
+| API Facade | Harmanpreet Singh Sagar |
+| Account Management | Jason Kim |
+| Aggregation Management | Praneet Singh |
