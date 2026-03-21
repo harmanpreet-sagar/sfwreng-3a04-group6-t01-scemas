@@ -1,5 +1,6 @@
 @startuml APIManagement_StateChart
 hide empty description
+top to bottom direction
 
 state "receiveRequest\n----\nuserId\nendpoint\nzoneId\nmetric\ntimestamp\n----\nreceive API request" as receiveRequest
 
