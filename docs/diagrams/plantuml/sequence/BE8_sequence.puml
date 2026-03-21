@@ -1,0 +1,51 @@
+@startuml
+participant User
+activate User
+
+participant UserAuth
+participant OperationalDashboard
+participant TrendsAnalytics
+database "DB" as DB
+
+User -> UserAuth : enter credentials
+activate UserAuth
+
+UserAuth -> OperationalDashboard : authenticate user
+activate OperationalDashboard
+OperationalDashboard --> UserAuth : authentication result
+deactivate OperationalDashboard
+
+UserAuth --> User : access granted
+deactivate UserAuth
+
+User -> OperationalDashboard : access dashboard
+activate OperationalDashboard
+OperationalDashboard --> User : display role-based options
+
+OperationalDashboard -> TrendsAnalytics : request trend data
+activate TrendsAnalytics
+
+TrendsAnalytics -> DB : fetch historical & real-time data
+activate DB
+DB --> TrendsAnalytics : return environmental data
+deactivate DB
+
+TrendsAnalytics --> OperationalDashboard : trend analytics data received
+deactivate TrendsAnalytics
+
+OperationalDashboard --> User : display charts & data
+deactivate OperationalDashboard
+
+User -> OperationalDashboard : review data
+activate OperationalDashboard
+
+OperationalDashboard -> TrendsAnalytics : validate data status
+activate TrendsAnalytics
+TrendsAnalytics --> OperationalDashboard : validation result
+deactivate TrendsAnalytics
+
+OperationalDashboard --> User : indicate data validated
+deactivate OperationalDashboard
+
+deactivate User
+@enduml

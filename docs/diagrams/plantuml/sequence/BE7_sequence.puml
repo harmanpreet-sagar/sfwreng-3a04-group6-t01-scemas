@@ -1,0 +1,57 @@
+@startuml
+participant User
+activate User
+
+participant UserAuth
+participant OperationalDashboard
+participant Alerts
+database "Alerts DB" as DB
+
+User -> UserAuth : enter credentials
+activate UserAuth
+
+UserAuth -> OperationalDashboard : authenticate user
+activate OperationalDashboard
+OperationalDashboard --> UserAuth : authentication result
+deactivate OperationalDashboard
+
+UserAuth --> User : access granted
+deactivate UserAuth
+
+User -> OperationalDashboard : open operational dashboard
+activate OperationalDashboard
+
+OperationalDashboard -> Alerts : load anomalous trend violations
+activate Alerts
+
+Alerts -> DB : fetch active violations
+activate DB
+DB --> Alerts : violations list
+deactivate DB
+
+Alerts --> OperationalDashboard : return violations
+deactivate Alerts
+
+OperationalDashboard --> User : display violations
+deactivate OperationalDashboard
+
+User -> OperationalDashboard : act on violation
+activate OperationalDashboard
+
+OperationalDashboard -> Alerts : update violation status
+activate Alerts
+
+Alerts -> DB : update violation record
+activate DB
+DB --> Alerts : record updated
+deactivate DB
+
+Alerts --> OperationalDashboard : update confirmed
+deactivate Alerts
+
+OperationalDashboard --> User : confirmation displayed
+deactivate OperationalDashboard
+
+deactivate User
+
+@enduml

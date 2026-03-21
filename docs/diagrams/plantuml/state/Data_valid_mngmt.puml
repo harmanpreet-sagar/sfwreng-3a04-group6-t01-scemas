@@ -1,0 +1,44 @@
+@startuml data_validation_statechart
+hide empty description
+top to bottom direction
+
+state "DataValidationManagement\n----\nvalidateIncomingData\ncoordinateValidation\n----\nreceive and coordinate incoming data validation" as DataValidationManagement
+
+state "EnsureMQTTCompliance\n----\nparsePacket\nvalidateMQTTFormat\n----\nparse and validate MQTT packet format" as EnsureMQTTCompliance
+
+state "SensorMonitor\n----\nmonitorSensorData\ndetectAnomalies\n----\nmonitor sensor data and detect anomalies" as SensorMonitor
+
+state "StoreValidatedData\n----\nstoreData\nsendToTimeSeriesDB\n----\nstore validated data into system" as StoreValidatedData
+
+state "ValidationEventLog\n----\nlogEvent\nattachTimestamp\n----\nlog validation events with timestamp" as ValidationEventLog
+
+state "ValidSensorDataDB\n----\nstore\nretrieveHistoricalData\n----\npersist and retrieve validated sensor data" as ValidSensorDataDB
+
+state "success\n----\nsuccess_message\n----\nvalidation and storage completed successfully" as success
+
+state "error\n----\nerror_message\n----\nvalidation or processing failure" as error
+
+[*] --> DataValidationManagement
+
+DataValidationManagement --> EnsureMQTTCompliance : validateIncomingData
+
+EnsureMQTTCompliance --> ValidationEventLog : logEvent
+EnsureMQTTCompliance --> error : invalid format
+EnsureMQTTCompliance --> SensorMonitor : valid format
+
+SensorMonitor --> ValidSensorDataDB : retrieveHistoricalData
+SensorMonitor --> error : anomaly detected
+SensorMonitor --> StoreValidatedData : no anomaly
+
+StoreValidatedData --> ValidSensorDataDB : storeData
+StoreValidatedData --> ValidationEventLog : logEvent
+StoreValidatedData --> success : stored successfully
+StoreValidatedData --> error : storage failure
+
+ValidationEventLog --> DataValidationManagement : continue
+
+error --> DataValidationManagement : retry
+success --> [*]
+error --> [*]
+
+@enduml
