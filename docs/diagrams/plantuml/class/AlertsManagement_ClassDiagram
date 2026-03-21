@@ -46,7 +46,7 @@ entity AggregatedEnvironmentalDataDB {
   + getAggregatedEnvironmentalData(): List
 }
 
-class ValidSensorDataDB <<entity>> {
+entity ValidSensorDataDB {
   + getValidatedSensorData(): List
 }
 
