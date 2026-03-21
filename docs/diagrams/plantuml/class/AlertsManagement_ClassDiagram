@@ -38,7 +38,7 @@ class NotificationService <<controller>> {
   + sendStatusChangeNotification(alert: Alert): void
 }
 
-class ThresholdDB <<entity>> {
+entity ThresholdDB {
   + getActiveThresholdRules(): List
 }
 
