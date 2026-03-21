@@ -1,0 +1,71 @@
+@startuml AlertsManagement
+
+class AlertsManagement {
+  + evaluateThresholdViolations(): void
+  + detectAnomalousTrends(): void
+  + createAlert(alert: Alert): void
+  + updateAlertStatus(alertId: String, newStatus: AlertStatus): void
+  + publishAlertUpdate(alert: Alert): void
+}
+
+entity Alert {
+  - alertId: String
+  - severity: String
+  - message: String
+  - status: AlertStatus
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  - zone: String
+  - metric: String
+  - sourceType: String
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+entity AlertsDB {
+  + storeAlert(alert: Alert): void
+  + updateAlert(alert: Alert): void
+  + getActiveAlerts(): List<Alert>
+  + getHistoricalAlerts(): List<Alert>
+}
+
+class NotificationService {
+  + sendAlertCreated(alert: Alert): void
+  + sendStatusChangeNotification(alert: Alert): void
+}
+
+entity ThresholdDB {
+  + getActiveThresholdRules(): List
+}
+
+entity AggregatedEnvironmentalDataDB {
+  + getAggregatedEnvironmentalData(): List
+}
+
+entity ValidSensorDataDB {
+  + getValidatedSensorData(): List
+}
+
+class APIFacade {
+  + routeRequest(): void
+}
+
+class DashboardAgent {
+  + displayAlerts(): void
+  + refreshView(): void
+}
+
+AlertsManagement --> ThresholdDB
+AlertsManagement --> AggregatedEnvironmentalDataDB
+AlertsManagement --> ValidSensorDataDB
+AlertsManagement --> AlertsDB
+AlertsManagement --> NotificationService
+AlertsManagement --> API_Facade
+AlertsDB --> Alert
+NotificationService --> DashboardAgent
+
+@enduml
