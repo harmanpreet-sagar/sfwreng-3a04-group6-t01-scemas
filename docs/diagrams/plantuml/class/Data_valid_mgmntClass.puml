@@ -78,9 +78,9 @@ DataValidationManagement --> IValidationComponent : uses / depends on
 ' Relationships
 ' ========================
 
-EnsureMQTTCompliance --> ValidationEventLog : logs events
-SensorMonitor --> ValidSensorDataDB : reads historical data
-StoreValidatedData --> ValidSensorDataDB : stores validated data
+EnsureMQTTCompliance --> ValidationEventLog
+SensorMonitor --> ValidSensorDataDB
+StoreValidatedData --> ValidSensorDataDB
 
 ' NEW relationships for EventLog
 ValidationEventLog --> EventLog : creates / formats
