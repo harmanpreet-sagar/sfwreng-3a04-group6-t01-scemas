@@ -72,14 +72,14 @@ entity Account {
 ' password stored as: 1x2ballsx4x
 ' ie sandwich password between key 
 
-APIFacade --> AccountManagement : routes to
-AccountManagement --> Logins : delegates
-AccountManagement --> ChangeUserPass : delegates
-AccountManagement --> DeactivateAccount : delegates
-Logins ..> AccountRepository : uses
-ChangeUserPass ..> AccountRepository : uses
-DeactivateAccount ..> AccountRepository : uses
-AccountDB .up.|> AccountRepository : implements
-AccountDB *-right- Account : stores
+APIFacade --> AccountManagement
+AccountManagement --> Logins
+AccountManagement --> ChangeUserPass
+AccountManagement --> DeactivateAccount
+Logins ..> AccountRepository
+ChangeUserPass ..> AccountRepository
+DeactivateAccount ..> AccountRepository
+AccountDB .up.|> AccountRepository
+AccountDB *-right- Account
 
 @enduml
