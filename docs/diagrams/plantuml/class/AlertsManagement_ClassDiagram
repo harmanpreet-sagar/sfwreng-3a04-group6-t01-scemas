@@ -42,7 +42,7 @@ entity ThresholdDB {
   + getActiveThresholdRules(): List
 }
 
-class AggregatedEnvironmentalDataDB <<entity>> {
+entity AggregatedEnvironmentalDataDB {
   + getAggregatedEnvironmentalData(): List
 }
 
