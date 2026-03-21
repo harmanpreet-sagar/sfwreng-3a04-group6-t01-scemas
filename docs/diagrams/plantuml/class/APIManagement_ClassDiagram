@@ -28,7 +28,7 @@ entity UsageLog {
   + recordRateLimitViolation(userId: String): void
 }
 
-class AggregatedEnvironmentalDataDB <<entity>> {
+entity AggregatedEnvironmentalDataDB {
   + getAggregatedEnvironmentalData(zoneId: String, metric: String): List
 }
 
