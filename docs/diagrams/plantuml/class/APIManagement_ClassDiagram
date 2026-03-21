@@ -14,7 +14,7 @@ class PublicAPIEndpoint {
   + returnResponse(response: APIResponse): void
 }
 
-class RateLimiter <<controller>> {
+class RateLimiter {
   + checkRateLimit(userId: String): boolean
 }
 
