@@ -54,7 +54,7 @@ class API_Facade <<controller>> {
   + routeRequest(): void
 }
 
-class DashboardAgent <<boundary>> {
+class DashboardAgent {
   + displayAlerts(): void
   + refreshView(): void
 }
