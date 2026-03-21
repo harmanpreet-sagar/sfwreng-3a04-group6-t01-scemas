@@ -1,0 +1,45 @@
+@startuml account_management_state_chart
+hide empty description
+top to bottom direction
+
+state "APIFacade\n----\naction\ndata\n----\nreceive and route request" as APIFacade
+
+state "AccountManagement\n----\naccountList\n----\ndisplay actions to authorized user" as AccountManagement
+
+state "DeactivateAccount\n----\nid\nconfirmation\n----\nstage account deactivation" as DeactivateAccount
+
+state "ChangeUserPass\n----\nid\nchanges\n----\nload and modify existing account" as ChangeUserPass
+
+state "Logins\n----\nusername\nencryptedpass\nconfirmed\n----\nconfirm/deny login" as Logins
+
+state "AccountDB\n----\naccount\n----\npush state to repository" as AccountDB
+
+state "success\n----\nsuccess_message\n----\ndisplay success message" as success
+
+state "error\n----\nerror_message\n----\ndisplay error message" as error
+
+[*] --> APIFacade
+
+APIFacade --> AccountManagement : process action
+
+AccountManagement --> DeactivateAccount  : deactivate
+AccountManagement --> ChangeUserPass    : edit
+AccountManagement -> Logins  : login
+
+DeactivateAccount --> AccountDB  : [data valid]
+DeactivateAccount -up-> AccountManagement : decline
+
+ChangeUserPass --> error          : [invalid changes]
+ChangeUserPass --> AccountDB    : [changes valid]
+
+Logins --> error        : [not found]
+Logins --> success  : [confirmed]
+
+AccountDB --> success          : success
+AccountDB --> error            : failure
+
+error --> AccountManagement            : retry
+success --> [*]
+error --> [*]
+
+@enduml
