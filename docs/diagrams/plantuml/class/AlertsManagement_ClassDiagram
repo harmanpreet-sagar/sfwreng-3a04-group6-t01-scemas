@@ -1,6 +1,6 @@
 @startuml AlertsManagement
 
-class AlertsManagement <<controller>> {
+class AlertsManagement {
   + evaluateThresholdViolations(): void
   + detectAnomalousTrends(): void
   + createAlert(alert: Alert): void
