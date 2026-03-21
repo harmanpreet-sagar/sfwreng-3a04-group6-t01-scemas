@@ -9,7 +9,7 @@ class APIManagement {
   + buildErrorResponse(message: String): APIResponse
 }
 
-class PublicAPIEndpoint <<boundary>> {
+class PublicAPIEndpoint {
   + receiveRequest(request: APIRequest): void
   + returnResponse(response: APIResponse): void
 }
