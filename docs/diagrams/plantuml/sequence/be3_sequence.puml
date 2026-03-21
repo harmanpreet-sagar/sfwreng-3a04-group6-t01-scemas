@@ -1,6 +1,6 @@
 @startuml be3_sequence
 
-actor Sensor
+participant Sensor
 
 
 participant "API Facade" as API
@@ -10,7 +10,7 @@ participant "Alerts Manager" as Alerts
 database "Alert DB" as DB
 participant "Dashboard" as Dash
 
-actor Operator
+participant Operator
 
 activate Sensor
 Sensor -> API : Send Telemetry
