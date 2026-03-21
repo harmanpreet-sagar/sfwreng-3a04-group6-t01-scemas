@@ -1,0 +1,59 @@
+@startuml APIManagement
+
+class APIManagement {
+  + processReadOnlyRequest(request: APIRequest): APIResponse
+  + validateRequest(request: APIRequest): boolean
+  + enforceRateLimit(request: APIRequest): boolean
+  + fetchAggregatedData(zoneId: String, metric: String): List
+  + buildSuccessResponse(data: List): APIResponse
+  + buildErrorResponse(message: String): APIResponse
+}
+
+class PublicAPIEndpoint {
+  + receiveRequest(request: APIRequest): void
+  + returnResponse(response: APIResponse): void
+}
+
+class RateLimiter {
+  + checkRateLimit(userId: String): boolean
+}
+
+class AccessControl {
+  + authorizeRequest(request: APIRequest): boolean
+}
+
+entity UsageLog {
+  + recordRequestMetadata(request: APIRequest): void
+  + getuserRequestHistory(userId: String): List
+  + recordRateLimitViolation(userId: String): void
+}
+
+entity AggregatedEnvironmentalDataDB {
+  + getAggregatedEnvironmentalData(zoneId: String, metric: String): List
+}
+
+class APIRequest {
+  - userId: String
+  - endpoint: String
+  - zoneId: String
+  - metric: String
+  - timestamp: DateTime
+}
+
+class APIResponse {
+  - statusCode: int
+  - message: String
+  - data: List
+}
+
+PublicAPIEndpoint --> APIManagement
+APIManagement --> RateLimiter
+APIManagement --> AccessControl
+APIManagement --> UsageLog
+APIManagement --> AggregatedEnvironmentalDataDB
+RateLimiter --> UsageLog
+AccessControl --> UsageLog
+PublicAPIEndpoint --> APIRequest
+PublicAPIEndpoint --> APIResponse
+
+@enduml
