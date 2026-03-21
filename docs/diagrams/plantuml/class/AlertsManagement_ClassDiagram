@@ -33,7 +33,7 @@ entity AlertsDB {
   + getHistoricalAlerts(): List<Alert>
 }
 
-class NotificationService <<controller>> {
+class NotificationService {
   + sendAlertCreated(alert: Alert): void
   + sendStatusChangeNotification(alert: Alert): void
 }
