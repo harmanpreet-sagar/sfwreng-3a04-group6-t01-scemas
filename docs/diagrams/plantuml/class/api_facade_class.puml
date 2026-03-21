@@ -1,0 +1,168 @@
+@startuml APIFacade_ClassDiagram
+
+class Request {
+  -endpoint : String
+  -userId : String
+  -role : String
+  -payload : Map
+  -timestamp : DateTime
+  -apiKey : String
+}
+
+class Result {
+  -success : Boolean
+  -data : Map
+  -errorMessage : String
+  -statusCode : int
+  -timestamp : DateTime
+}
+
+class Response {
+  -statusCode : int
+  -body : Map
+  -message : String
+  -timestamp : DateTime
+}
+
+class Alert {
+  -id : int
+  -severity : String
+  -zone : String
+  -metricType : String
+  -message : String
+  -timestamp : DateTime
+  -status : String
+}
+
+class AccountAdminAgent {
+  +initiateAccountOperation(req : Request)
+}
+
+class ThresholdAdminAgent {
+  +initiateThresholdOperation(req : Request)
+}
+
+class DashboardAgent {
+  +displayData(data : Map)
+  +displayAlert(alert : Alert)
+}
+
+class APIFacade {
+  -req : Request
+  -result : Result
+  -resp : Response
+  +apiRequest(req : Request)
+  +validateRequest(req : Request) : Boolean
+  +authorizeRequest(req : Request) : Boolean
+  +dispatchRequest(req : Request) : Result
+  +formatResponse(result : Result) : Response
+  +returnResponse(resp : Response)
+}
+
+interface IThresholdService {
+  -action : String
+  -data : Map
+  +receiveRequest(action : String)
+  +validateInput(data : Map) : Boolean
+  +processAction(action : String, data : Map)
+}
+
+interface IAccountService {
+  -credentials : Map
+  -data : Map
+  +login(credentials : Map) : Boolean
+  +changeCredentials(data : Map)
+  +deactivateAccount(id : int)
+}
+
+interface IAlertsService {
+  -data : Map
+  -violation : Map
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+}
+
+interface IAggregationService {
+  -data : Map
+  +performAggregations()
+  +sendToDashboard(data : Map)
+}
+
+class ThresholdManagement {
+  -action : String
+  -data : Map
+  +receiveRequest(action : String)
+  +validateInput(data : Map) : Boolean
+  +processAction(action : String, data : Map)
+}
+
+class AccountManagement {
+  -credentials : Map
+  -data : Map
+  +login(credentials : Map) : Boolean
+  +changeCredentials(data : Map)
+  +deactivateAccount(id : int)
+}
+
+class AlertsManagement {
+  -data : Map
+  -violation : Map
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+}
+
+class AggregationManagement {
+  -data : Map
+  +performAggregations()
+  +sendToDashboard(data : Map)
+}
+
+class successResponse {
+  -result : Result
+  -resp : Response
+  +formatAndReturnSuccessResponse()
+}
+
+class errorResponse {
+  -statusCode : int
+  -resp : Response
+  +formatAndReturnErrorResponse()
+}
+
+' Custom type dependencies
+AccountAdminAgent ..> Request
+ThresholdAdminAgent ..> Request
+DashboardAgent ..> Alert
+APIFacade ..> Request
+APIFacade ..> Result
+APIFacade ..> Response
+IAlertsService ..> Alert
+AlertsManagement ..> Alert
+successResponse ..> Result
+successResponse ..> Response
+errorResponse ..> Response
+
+' Agents send requests to APIFacade
+AccountAdminAgent   --> APIFacade
+ThresholdAdminAgent --> APIFacade
+DashboardAgent      --> APIFacade
+
+' APIFacade routes to service interfaces
+APIFacade --> IThresholdService
+APIFacade --> IAccountService
+APIFacade --> IAlertsService
+APIFacade --> IAggregationService
+
+' APIFacade produces success or error response
+APIFacade ..> successResponse
+APIFacade ..> errorResponse
+
+' Concrete classes implement service interfaces
+ThresholdManagement   ..|> IThresholdService
+AccountManagement     ..|> IAccountService
+AlertsManagement      ..|> IAlertsService
+AggregationManagement ..|> IAggregationService
+
+@enduml

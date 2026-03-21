@@ -1,0 +1,65 @@
+@startuml be3_sequence
+
+participant Sensor
+
+
+participant "API Facade" as API
+participant "Aggregation Manager" as Agg
+participant "Threshold Manager" as Thresh
+participant "Alerts Manager" as Alerts
+database "Alert DB" as DB
+participant "Dashboard" as Dash
+
+participant Operator
+
+activate Sensor
+Sensor -> API : Send Telemetry
+activate API
+deactivate Sensor
+
+API -> Agg : Forward Sensor Data
+activate Agg
+
+Agg --> API : Sensor Data Received
+deactivate API
+
+Agg -> Thresh : Send Area Metrics
+activate Thresh
+
+Thresh --> Agg : Area Metrics Received
+deactivate Agg
+
+Thresh -> Alerts : Threshold Violation Detected
+activate Alerts
+
+Alerts --> Thresh : Alert Created
+deactivate Thresh
+
+Alerts -> DB : Store Alert
+activate DB
+DB --> Alerts : Alert Stored
+deactivate DB
+
+Alerts -> Dash : Notify Alert
+activate Dash
+
+activate Operator
+Dash -> Operator : Display Alert
+Operator -> Dash : Acknowledge Alert
+
+Dash -> Alerts : Update Status
+
+Alerts -> DB : Update Alert Record
+
+activate DB
+DB --> Alerts : Alert Record Updated
+deactivate DB
+
+Alerts --> Dash : Alert Status Updated
+deactivate Alerts
+Dash --> Operator : Acknowledgement Confirmed
+deactivate Dash
+
+deactivate Operator
+
+@enduml

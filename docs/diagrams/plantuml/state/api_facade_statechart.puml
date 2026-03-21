@@ -1,0 +1,52 @@
+@startuml api_facade_statechart
+hide empty description
+top to bottom direction
+
+state "AccountAdminAgent\n----\n\n----\ninitiateAccountOperation" as AccountAdminAgent
+
+state "ThresholdAdminAgent\n----\n\n----\ninitiateThresholdOperation" as ThresholdAdminAgent
+
+state "DashboardAgent\n----\n\n----\ndisplayData\ndisplayAlert" as DashboardAgent
+
+state "APIFacade\n----\nreq\nresult\nresp\n----\napiRequest\nvalidateRequest\nauthorizeRequest\ndispatchRequest\nformatResponse\nreturnResponse" as APIFacade
+
+state "IThresholdService\n----\naction\ndata\n----\nreceiveRequest\nvalidateInput\nprocessAction" as IThresholdService
+
+state "IAccountService\n----\ncredentials\ndata\n----\nlogin\nchangeCredentials\ndeactivateAccount" as IAccountService
+
+state "IAlertsService\n----\ndata\nviolation\n----\nevaluateTelemetry\ngenerateAlert\nupdateAlertStatus" as IAlertsService
+
+state "IAggregationService\n----\ndata\n----\nperformAggregations\nsendToDashboard" as IAggregationService
+
+state "successResponse\n----\nresult\nresp\n----\nformat and return success response" as successResponse
+
+state "errorResponse\n----\nstatusCode\nresp\n----\nformat and return error response" as errorResponse
+
+[*] --> AccountAdminAgent
+[*] --> ThresholdAdminAgent
+[*] --> DashboardAgent
+
+AccountAdminAgent   --> APIFacade : initiateAccountOperation
+ThresholdAdminAgent --> APIFacade : initiateThresholdOperation
+DashboardAgent      --> APIFacade : request
+
+APIFacade --> errorResponse       : [invalid request]
+APIFacade --> errorResponse       : [unauthorized]
+APIFacade --> IThresholdService   : [threshold request]
+APIFacade --> IAccountService     : [account request]
+APIFacade --> IAlertsService      : [alerts request]
+APIFacade --> IAggregationService : [aggregation request]
+
+IThresholdService   --> successResponse : success
+IThresholdService   --> errorResponse   : failure
+IAccountService     --> successResponse : success
+IAccountService     --> errorResponse   : failure
+IAlertsService      --> successResponse : success
+IAlertsService      --> errorResponse   : failure
+IAggregationService --> successResponse : success
+IAggregationService --> errorResponse   : failure
+
+successResponse --> [*]
+errorResponse   --> [*]
+
+@enduml

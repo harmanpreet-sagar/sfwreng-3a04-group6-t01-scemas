@@ -2,19 +2,19 @@
 hide empty description
 top to bottom direction
 
-state "Monitoring\n----\nvalidatedReadings\naggregatedData\nactiveThresholds\nstatusChangeRequest" as Monitoring : wait for validated data, aggregated data, or alert status updates
+state "Monitoring\n----\nvalidatedReadings\naggregatedData\nactiveThresholds\nstatusChangeRequest\n----\nwait for validated data, aggregated data, or alert status updates" as Monitoring
 
-state "EvaluateThresholdViolations\n----\nvalidatedReadings\nactiveThresholds\nthresholdViolationDetected" as EvaluateThresholdViolations : compare validated readings against active thresholds
+state "EvaluateThresholdViolations\n----\nvalidatedReadings\nactiveThresholds\nthresholdViolationDetected\n----\ncompare validated readings against active thresholds" as EvaluateThresholdViolations
 
-state "DetectAnomalousTrends\n----\naggregatedData\nanomalyDetected" as DetectAnomalousTrends : analyze aggregated environmental data for anomalous trends
+state "DetectAnomalousTrends\n----\naggregatedData\nanomalyDetected\n----\nanalyze aggregated environmental data for anomalous trends" as DetectAnomalousTrends
 
-state "CreateAlert\n----\nalertDetails\nsourceType\nalertStatus" as CreateAlert : create alert and store it in AlertsDB
+state "CreateAlert\n----\nalertDetails\nsourceType\nalertStatus\n----\ncreate alert and store it in AlertsDB" as CreateAlert
 
-state "UpdateAlertStatus\n----\nalertId\nnewStatus\nupdatedAt" as UpdateAlertStatus : update alert status in AlertsDB
+state "UpdateAlertStatus\n----\nalertId\nnewStatus\nupdatedAt\n----\nupdate alert status in AlertsDB" as UpdateAlertStatus
 
-state "PublishAlertUpdate\n----\nalert\nnotificationPayload" as PublishAlertUpdate : publish alert update and notify dashboard
+state "PublishAlertUpdate\n----\nalert\nnotificationPayload\n----\npublish alert update and notify dashboard" as PublishAlertUpdate
 
-state "AlertError\n----\nfailedOperation\nerrorMessage" as AlertError : record failure and preserve monitoring flow
+state "AlertError\n----\nfailedOperation\nerrorMessage\n----\nrecord failure and preserve monitoring flow" as AlertError
 
 [*] --> Monitoring
 
