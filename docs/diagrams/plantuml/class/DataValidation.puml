@@ -1,0 +1,77 @@
+@startuml DataValidation_ClassDiagram
+title Data Validation
+
+' ─── External stubs ──────────────────────────────────────────
+' ValidSensorDataDB is consumed by Aggregation and Alerts
+class PerformAggregations <<external>> {
+  +computeAggregatedMetrics(data : Map) : AggregatedData
+}
+
+class AlertsManagement <<external>> {
+  +evaluateTelemetry(data : Map)
+}
+
+' ─── Own classes ─────────────────────────────────────────────
+interface IValidationComponent {
+  +execute()
+}
+
+class DataValidationManagement {
+  +validateIncomingData()
+  +coordinateValidation()
+}
+
+class EnsureMQTTCompliance {
+  +parsePacket() : Boolean
+  +validateMQTTFormat() : Boolean
+}
+
+class SensorMonitor {
+  +monitorSensorData()
+  +detectAnomalies() : Boolean
+}
+
+class StoreValidatedData {
+  +storeData()
+  +sendToTimeSeriesDB()
+}
+
+class ValidationEventLog {
+  +logEvent(e : EventLog)
+  +attachTimestamp(e : EventLog)
+  +formatLog(e : EventLog) : String
+}
+
+entity ValidSensorDataDB {
+  +store()
+  +retrieveHistoricalData() : List
+  +getValidatedSensorData() : List
+}
+
+entity EventLog {
+  -eventId : int
+  -eventType : String
+  -message : String
+  -source : String
+  -timestamp : DateTime
+  -status : String
+  +createLog(eventType : String, message : String, source : String) : EventLog
+  +updateStatus(status : String)
+  +getDetails() : Map
+}
+
+' ─── Cross-subsystem connections ─────────────────────────────
+ValidSensorDataDB --> PerformAggregations
+ValidSensorDataDB --> AlertsManagement
+
+' ─── Internal relationships ──────────────────────────────────
+IValidationComponent     <|.. EnsureMQTTCompliance
+IValidationComponent     <|.. SensorMonitor
+IValidationComponent     <|.. StoreValidatedData
+DataValidationManagement --> IValidationComponent
+EnsureMQTTCompliance     --> ValidationEventLog
+SensorMonitor            --> ValidSensorDataDB
+StoreValidatedData       --> ValidSensorDataDB
+ValidationEventLog       --> EventLog
+
+@enduml

@@ -1,0 +1,92 @@
+@startuml AlertsManagement_ClassDiagram
+title Alerts Management
+
+' ─── External stubs ──────────────────────────────────────────
+class APIFacade <<external>> {
+  +dispatchRequest(req : Request)
+}
+
+interface IAlertsService <<external>> {
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+}
+
+class DashboardAgent <<external>> {
+  +displayAlert(alert : Alert)
+  +displayAlerts()
+  +refreshView()
+}
+
+entity ThresholdDB <<external>> {
+  +getActiveThresholdRules() : List
+}
+
+entity AggregatedEnvironmentalDataDB <<external>> {
+  +getAggregatedEnvironmentalData(zoneId : String, metric : String) : List
+}
+
+entity ValidSensorDataDB <<external>> {
+  +getValidatedSensorData() : List
+}
+
+' ─── Own classes ─────────────────────────────────────────────
+entity Alert {
+  -alertId : String
+  -severity : String
+  -message : String
+  -status : String
+  -createdAt : DateTime
+  -updatedAt : DateTime
+  -zone : String
+  -metric : String
+  -sourceType : String
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+class AlertsManagement {
+  -data : Map
+  -violation : Map
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+  +evaluateThresholdViolations()
+  +detectAnomalousTrends()
+  +createAlert(alert : Alert)
+  +publishAlertUpdate(alert : Alert)
+}
+
+class NotificationService {
+  +sendAlertCreated(alert : Alert)
+  +sendStatusChangeNotification(alert : Alert)
+}
+
+entity AlertsDB {
+  +storeAlert(alert : Alert)
+  +updateAlert(alert : Alert)
+  +getActiveAlerts() : List
+  +getHistoricalAlerts() : List
+}
+
+' ─── Cross-subsystem connections ─────────────────────────────
+APIFacade        --> IAlertsService
+AlertsManagement ..|> IAlertsService
+AlertsManagement --> ThresholdDB
+AlertsManagement --> AggregatedEnvironmentalDataDB
+AlertsManagement --> ValidSensorDataDB
+AlertsManagement --> APIFacade
+NotificationService --> DashboardAgent
+
+' ─── Internal relationships ──────────────────────────────────
+AlertsManagement    --> AlertsDB
+AlertsManagement    --> NotificationService
+AlertsDB            --> Alert
+Alert               --> AlertStatus
+NotificationService ..> Alert
+
+@enduml

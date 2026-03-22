@@ -1,112 +1,96 @@
-@startuml AggregationManagement
+@startuml AggregationManagement_ClassDiagram
+title Aggregation Management
 
-' =========================
-' ACCOUNT MANAGEMENT
-' =========================
-class "Account Management" as AccountMgmt {
-  +authenticateUser()
-  +manageAccount()
-  +enforceRBAC()
+' ─── External stubs ──────────────────────────────────────────
+class APIFacade <<external>> {
+  +dispatchRequest(req : Request)
 }
 
-entity "Account DB" as AccountDB
-AccountMgmt --> AccountDB
-
-' =========================
-' DATA VALIDATION
-' =========================
-class "Data Validation" as Validation {
-  +validateSensorData()
-  +checkMQTTCompliance()
-  +logValidationEvent()
-}
-
-entity "Valid Sensor Data DB" as ValidDB
-Validation --> ValidDB
-
-' =========================
-' AGGREGATION MANAGEMENT
-' =========================
-class "Aggregation Management" as AggMgmt {
+interface IAggregationService <<external>> {
   +performAggregations()
-  +showDataToDashboards()
+  +showDataToDashboards(data : Map)
 }
 
-class "Perform Aggregations" as PerformAgg {
-  +computeAggregatedMetrics()
+class DashboardAgent <<external>> {
+  +displayData(data : Map)
+  +refreshView()
 }
 
-class "Show Data to Dashboards" as ShowDash {
-  +sendDataToDashboard()
+entity ValidSensorDataDB <<external>> {
+  +getValidatedSensorData() : List
 }
 
-entity "Aggregated Environmental Data DB" as AggDB
-
-AggMgmt --> PerformAgg
-AggMgmt --> ShowDash
-PerformAgg --> AggMgmt
-PerformAgg --> ValidDB
-PerformAgg --> AggDB
-
-ShowDash --> AggMgmt
-ShowDash --> AggDB
-
-' =========================
-' THRESHOLD MANAGEMENT
-' =========================
-class "Threshold Management" as ThreshMgmt {
-  +createThreshold()
-  +updateThreshold()
-  +deleteThreshold()
+class AlertsManagement <<external>> {
+  +detectAnomalousTrends()
 }
 
-entity "Threshold DB" as ThreshDB
-ThreshMgmt --> ThreshDB
-
-' =========================
-' ALERTS MANAGEMENT
-' =========================
-class "Alerts Management" as AlertsMgmt {
-  +evaluateThresholds()
-  +detectViolation()
-  +createAlert()
-  +updateAlertStatus()
+class APIManagement <<external>> {
+  +fetchAggregatedData(zoneId : String, metric : String) : List
 }
 
-entity "Alert DB" as AlertDB
-
-AlertsMgmt --> AlertDB
-AlertsMgmt --> ThreshMgmt
-AlertsMgmt --> AggMgmt
-
-' =========================
-' API MANAGEMENT
-' =========================
-class "API Management" as APIMgmt {
-  +handleRequest()
-  +validateRequest()
-  +rateLimitRequest()
-  +returnAggregatedData()
+' ─── Own classes ─────────────────────────────────────────────
+class AggregationManagement {
+  -data : Map
+  +performAggregations()
+  +showDataToDashboards(data : Map)
 }
 
-APIMgmt --> AggMgmt
-APIMgmt --> AccountMgmt
-
-' =========================
-' DASHBOARD AGENT
-' =========================
-class "Dashboard Agent" as Dash {
-  +displayAggregatedData()
-  +displayAlerts()
+class PerformAggregations {
+  -zone : String
+  -interval : String
+  -metricType : String
+  +computeAggregatedMetrics(data : Map) : AggregatedData
+  +saveResult(d : AggregatedData)
 }
 
-Dash --> AggMgmt
-Dash --> AlertsMgmt
+class ShowDataToDashboards {
+  -zone : String
+  +fetchAggregatedData(zone : String) : List
+  +sendDataToDashboard(data : Map)
+}
 
-' =========================
-' SYSTEM FLOW CONSISTENCY
-' =========================
-Validation --> AggMgmt
-AggMgmt --> AlertsMgmt
+interface IAggregatedDataRepository {
+  +save(d : AggregatedData)
+  +findByZone(zone : String) : List
+  +findByInterval(interval : String) : List
+  +findLatest(zone : String) : AggregatedData
+}
+
+entity AggregatedEnvironmentalDataDB {
+  -aggregatedData : AggregatedData
+  +save(d : AggregatedData)
+  +findByZone(zone : String) : List
+  +findByInterval(interval : String) : List
+  +findLatest(zone : String) : AggregatedData
+  +getAggregatedEnvironmentalData(zoneId : String, metric : String) : List
+}
+
+entity AggregatedData {
+  -id : int
+  -zone : String
+  -metricType : String
+  -value : double
+  -interval : String
+  -timestamp : DateTime
+  +getSummary() : Map
+}
+
+' ─── Cross-subsystem connections ─────────────────────────────
+APIFacade             --> IAggregationService
+AggregationManagement ..|> IAggregationService
+PerformAggregations   --> ValidSensorDataDB
+ShowDataToDashboards  --> DashboardAgent
+AggregatedEnvironmentalDataDB --> AlertsManagement
+AggregatedEnvironmentalDataDB --> APIManagement
+
+' ─── Internal relationships ──────────────────────────────────
+AggregationManagement         --> PerformAggregations
+AggregationManagement         --> ShowDataToDashboards
+PerformAggregations           ..> IAggregatedDataRepository
+ShowDataToDashboards          ..> IAggregatedDataRepository
+AggregatedEnvironmentalDataDB ..|> IAggregatedDataRepository
+AggregatedEnvironmentalDataDB *-- AggregatedData
+PerformAggregations           ..> AggregatedData
+IAggregatedDataRepository     ..> AggregatedData
 
 @enduml

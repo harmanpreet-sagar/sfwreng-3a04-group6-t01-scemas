@@ -1,0 +1,152 @@
+@startuml PresentationLayer_ClassDiagram
+title Presentation Layer
+
+' ─── Own shared types ───────────────────────────────────────
+class Request {
+  -endpoint : String
+  -userId : String
+  -role : String
+  -payload : Map
+  -timestamp : DateTime
+  -apiKey : String
+}
+
+class Result {
+  -success : Boolean
+  -data : Map
+  -errorMessage : String
+  -statusCode : int
+  -timestamp : DateTime
+}
+
+class Response {
+  -statusCode : int
+  -body : Map
+  -message : String
+  -timestamp : DateTime
+}
+
+class successResponse {
+  -result : Result
+  -resp : Response
+  +formatAndReturnSuccessResponse()
+}
+
+class errorResponse {
+  -statusCode : int
+  -resp : Response
+  +formatAndReturnErrorResponse()
+}
+
+entity Alert {
+  -alertId : String
+  -severity : String
+  -status : String
+  -zone : String
+  -metric : String
+}
+
+' ─── Own classes ────────────────────────────────────────────
+class AccountAdminAgent {
+  +initiateAccountOperation(req : Request)
+}
+
+class ThresholdAdminAgent {
+  +initiateThresholdOperation(req : Request)
+}
+
+class DashboardAgent {
+  +displayData(data : Map)
+  +displayAlert(alert : Alert)
+  +displayAlerts()
+  +refreshView()
+}
+
+class APIFacade {
+  -req : Request
+  -result : Result
+  -resp : Response
+  +apiRequest(req : Request)
+  +validateRequest(req : Request) : Boolean
+  +authorizeRequest(req : Request) : Boolean
+  +dispatchRequest(req : Request) : Result
+  +formatResponse(result : Result) : Response
+  +returnResponse(resp : Response)
+}
+
+interface IThresholdService {
+  +receiveRequest(action : String)
+  +validateInput(data : Map) : Boolean
+  +processAction(action : String, data : Map)
+}
+
+interface IAccountService {
+  +login(credentials : Map) : Boolean
+  +changeCredentials(data : Map)
+  +deactivateAccount(id : int)
+}
+
+interface IAlertsService {
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+}
+
+interface IAggregationService {
+  +performAggregations()
+  +showDataToDashboards(data : Map)
+}
+
+' ─── External stubs (implemented in other subsystems) ───────
+class AccountManagement <<external>> {
+}
+
+class ThresholdManagement <<external>> {
+}
+
+class AlertsManagement <<external>> {
+}
+
+class AggregationManagement <<external>> {
+}
+
+class ShowDataToDashboards <<external>> {
+}
+
+class NotificationService <<external>> {
+}
+
+' ─── Internal relationships ──────────────────────────────────
+AccountAdminAgent   --> APIFacade
+ThresholdAdminAgent --> APIFacade
+DashboardAgent      --> APIFacade
+
+APIFacade --> IThresholdService
+APIFacade --> IAccountService
+APIFacade --> IAlertsService
+APIFacade --> IAggregationService
+
+APIFacade          ..> Request
+APIFacade          ..> Result
+APIFacade          ..> Response
+APIFacade          ..> successResponse
+APIFacade          ..> errorResponse
+AccountAdminAgent  ..> Request
+ThresholdAdminAgent ..> Request
+DashboardAgent     ..> Alert
+IAlertsService     ..> Alert
+successResponse    ..> Result
+successResponse    ..> Response
+errorResponse      ..> Response
+
+' ─── Cross-subsystem connections ─────────────────────────────
+AccountManagement     ..|> IAccountService
+ThresholdManagement   ..|> IThresholdService
+AlertsManagement      ..|> IAlertsService
+AggregationManagement ..|> IAggregationService
+
+ShowDataToDashboards  --> DashboardAgent
+NotificationService   --> DashboardAgent
+AlertsManagement      --> APIFacade
+
+@enduml

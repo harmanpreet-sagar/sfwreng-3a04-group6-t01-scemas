@@ -1,0 +1,65 @@
+@startuml APIManagement_ClassDiagram
+title API Management
+
+' ─── External stubs ──────────────────────────────────────────
+entity AggregatedEnvironmentalDataDB <<external>> {
+  +getAggregatedEnvironmentalData(zoneId : String, metric : String) : List
+}
+
+' ─── Own classes ─────────────────────────────────────────────
+class APIManagement {
+  +processReadOnlyRequest(request : APIRequest) : APIResponse
+  +validateRequest(request : APIRequest) : Boolean
+  +enforceRateLimit(request : APIRequest) : Boolean
+  +fetchAggregatedData(zoneId : String, metric : String) : List
+  +buildSuccessResponse(data : List) : APIResponse
+  +buildErrorResponse(message : String) : APIResponse
+}
+
+class PublicAPIEndpoint {
+  +receiveRequest(request : APIRequest)
+  +returnResponse(response : APIResponse)
+}
+
+class RateLimiter {
+  +checkRateLimit(userId : String) : Boolean
+}
+
+class AccessControl {
+  +authorizeRequest(request : APIRequest) : Boolean
+}
+
+entity UsageLog {
+  +recordRequestMetadata(request : APIRequest)
+  +getUserRequestHistory(userId : String) : List
+  +recordRateLimitViolation(userId : String)
+}
+
+class APIRequest {
+  -userId : String
+  -endpoint : String
+  -zoneId : String
+  -metric : String
+  -timestamp : DateTime
+}
+
+class APIResponse {
+  -statusCode : int
+  -message : String
+  -data : List
+}
+
+' ─── Cross-subsystem connections ─────────────────────────────
+APIManagement --> AggregatedEnvironmentalDataDB
+
+' ─── Internal relationships ──────────────────────────────────
+PublicAPIEndpoint --> APIManagement
+APIManagement     --> RateLimiter
+APIManagement     --> AccessControl
+APIManagement     --> UsageLog
+RateLimiter       --> UsageLog
+AccessControl     --> UsageLog
+PublicAPIEndpoint ..> APIRequest
+PublicAPIEndpoint ..> APIResponse
+
+@enduml

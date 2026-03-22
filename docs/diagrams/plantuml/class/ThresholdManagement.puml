@@ -1,31 +1,27 @@
 @startuml ThresholdManagement_ClassDiagram
+title Threshold Management
 
-class ThresholdAdminAgent {
+' ─── External stubs ──────────────────────────────────────────
+class ThresholdAdminAgent <<external>> {
   +initiateThresholdOperation(req : Request)
 }
 
-class APIFacade {
-  -req : Request
-  -result : Result
-  -resp : Response
-  +apiRequest(req : Request)
-  +validateRequest(req : Request) : Boolean
-  +authorizeRequest(req : Request) : Boolean
-  +dispatchRequest(req : Request) : Result
-  +formatResponse(result : Result) : Response
-  +returnResponse(resp : Response)
+class APIFacade <<external>> {
+  +dispatchRequest(req : Request)
 }
 
-interface IThresholdService {
-  -action : String
-  -data : Map
+interface IThresholdService <<external>> {
   +receiveRequest(action : String)
   +validateInput(data : Map) : Boolean
   +processAction(action : String, data : Map)
 }
 
+class AlertsManagement <<external>> {
+}
+
+' ─── Own classes ─────────────────────────────────────────────
 class HighLevelUI {
-  -thresholdList : List<Threshold>
+  -thresholdList : List
   +displayThresholds()
   +displayForm()
   +displayConfirmation()
@@ -76,8 +72,8 @@ interface IThresholdRepository {
   +update(t : Threshold)
   +delete(id : int)
   +findById(id : int) : Threshold
-  +findAll() : List<Threshold>
-  +findActive() : List<Threshold>
+  +findAll() : List
+  +findActive() : List
 }
 
 entity ThresholdDB {
@@ -86,8 +82,9 @@ entity ThresholdDB {
   +update(t : Threshold)
   +delete(id : int)
   +findById(id : int) : Threshold
-  +findAll() : List<Threshold>
-  +findActive() : List<Threshold>
+  +findAll() : List
+  +findActive() : List
+  +getActiveThresholdRules() : List
 }
 
 entity Threshold {
@@ -104,43 +101,21 @@ entity Threshold {
   +getDetails() : Map
 }
 
-class AlertsManagement {
-  -data : Map
-  -violation : Map
-  +evaluateTelemetry(data : Map)
-  +generateAlert(violation : Map) : Alert
-  +updateAlertStatus(id : int, status : String)
-}
+' ─── Cross-subsystem connections ─────────────────────────────
+ThresholdAdminAgent   --> APIFacade
+APIFacade             --> IThresholdService
+ThresholdManagement   ..|> IThresholdService
+ThresholdDB           --> AlertsManagement
 
-' Boundary → APIFacade
-ThresholdAdminAgent --> APIFacade
-
-' APIFacade routes through interface
-APIFacade --> IThresholdService
-
-' HighLevelUI communicates with ThresholdManagement directly (display layer)
-HighLevelUI --> ThresholdManagement
-
-' ThresholdManagement implements the service interface
-ThresholdManagement ..|> IThresholdService
-
-' ThresholdManagement delegates to operation controllers
+' ─── Internal relationships ──────────────────────────────────
+HighLevelUI         --> ThresholdManagement
 ThresholdManagement --> CreateThreshold
 ThresholdManagement --> EditThreshold
 ThresholdManagement --> DeleteThreshold
-
-' Operation controllers depend on the repository interface
-CreateThreshold ..> IThresholdRepository
-EditThreshold ..> IThresholdRepository
-DeleteThreshold ..> IThresholdRepository
-
-' ThresholdDB implements the repository interface
-ThresholdDB ..|> IThresholdRepository
-
-' ThresholdDB owns Threshold records
-ThresholdDB *-- Threshold
-
-' ThresholdDB supplies active thresholds to AlertsManagement
-ThresholdDB --> AlertsManagement
+CreateThreshold     ..> IThresholdRepository
+EditThreshold       ..> IThresholdRepository
+DeleteThreshold     ..> IThresholdRepository
+ThresholdDB         ..|> IThresholdRepository
+ThresholdDB         *-- Threshold
 
 @enduml

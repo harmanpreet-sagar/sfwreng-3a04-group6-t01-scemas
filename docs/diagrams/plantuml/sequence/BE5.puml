@@ -1,0 +1,22 @@
+@startuml BE5_3A04_D3_Seq
+
+participant "User" as User
+participant "UserAuth" as UserAuth
+participant "AccountManagement" as AccountManagement
+database "AccountDB" as AccountDB
+
+activate User
+activate UserAuth
+User   ->  UserAuth : enter details
+activate AccountManagement
+UserAuth -> AccountManagement : authenticate user
+activate AccountDB
+AccountManagement -> AccountDB : save edits
+AccountDB --> AccountManagement : notify success
+deactivate AccountDB
+AccountManagement --> UserAuth : confirm edits
+deactivate AccountManagement
+UserAuth --> User : notify completion
+deactivate UserAuth
+deactivate User
+@enduml

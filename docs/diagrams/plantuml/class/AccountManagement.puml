@@ -1,0 +1,95 @@
+@startuml AccountManagement_ClassDiagram
+title Account Management
+
+' ─── External stubs ──────────────────────────────────────────
+class APIFacade <<external>> {
+  +dispatchRequest(req : Request)
+}
+
+interface IAccountService <<external>> {
+  +login(credentials : Map) : Boolean
+  +changeCredentials(data : Map)
+  +deactivateAccount(id : int)
+}
+
+' ─── Own classes ─────────────────────────────────────────────
+class AccountManagement {
+  -credentials : Map
+  -data : Map
+  +receiveRequest(action : String)
+  +validateInput(data : Map) : Boolean
+  +processAction(action : String, data : Map)
+  +validateUser() : Boolean
+  +login(credentials : Map) : Boolean
+  +changeCredentials(data : Map)
+  +deactivateAccount(id : int)
+}
+
+class Logins {
+  +parseInput(data : Map) : Map
+  +checkAccountExists() : Boolean
+  +tryPassword() : Boolean
+  +acceptLoginAttempt() : Boolean
+  +createAccount(data : Map)
+}
+
+class ChangeUserPass {
+  +editPassword()
+  +confirmChanges() : Boolean
+  +writeToDB(aid : int) : Boolean
+}
+
+class DeactivateAccount {
+  +confirmDeactivation()
+  +deactivateAccount(a : Account)
+  +updateRepository(aid : int)
+}
+
+interface AccountRepository {
+  +create(t : Account)
+  +update(t : Account)
+  +delete(id : int)
+  +deleteInactive()
+  +findById(id : int) : Account
+  +findAll() : List
+}
+
+entity AccountDB {
+  +create(t : Account)
+  +update(t : Account)
+  +delete(id : int)
+  +deleteInactive()
+  +findById(id : int) : Account
+  +findAll() : List
+}
+
+entity Account {
+  -aid : int
+  -name : String
+  -email : String
+  -password : String
+  -clearance : String
+  -isActive : Boolean
+  -createdAt : DateTime
+  -updatedAt : DateTime
+  +deactivate() : Boolean
+  +decrypt(password : String, aid : int) : String
+  +encrypt(aid : int)
+  +getDetails() : List
+}
+
+' ─── Cross-subsystem connections ─────────────────────────────
+APIFacade         --> AccountManagement
+AccountManagement ..|> IAccountService
+
+' ─── Internal relationships ──────────────────────────────────
+AccountManagement  --> Logins
+AccountManagement  --> ChangeUserPass
+AccountManagement  --> DeactivateAccount
+Logins             ..> AccountRepository
+ChangeUserPass     ..> AccountRepository
+DeactivateAccount  ..> AccountRepository
+AccountDB          ..|> AccountRepository
+AccountDB          *-- Account
+
+@enduml

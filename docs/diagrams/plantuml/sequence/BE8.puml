@@ -1,4 +1,5 @@
-@startuml
+@startuml BE8_sequence
+
 participant User
 activate User
 

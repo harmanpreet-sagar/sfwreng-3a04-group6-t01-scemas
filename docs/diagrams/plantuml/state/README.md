@@ -8,4 +8,4 @@
 | Threshold Management | Harmanpreet Singh Sagar |
 | API Facade | Harmanpreet Singh Sagar |
 | Account Management | Jason Kim |
-| Aggregation Management | Praneet Singh |
+| Aggregation Management | Harmanpreet Singh Sagar |

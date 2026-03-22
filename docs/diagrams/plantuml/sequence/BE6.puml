@@ -1,0 +1,19 @@
+@startuml BE6_3A04_D3
+
+participant "User" as User
+participant "APIManagement" as APIManagement
+participant "ReportMaker" as ReportMaker
+
+activate User
+User -> User : research API
+User -> APIManagement : make request
+activate APIManagement
+APIManagement -> ReportMaker : send details
+activate ReportMaker
+ReportMaker --> APIManagement : return report
+deactivate ReportMaker
+APIManagement --> User : provide services
+deactivate APIManagement
+deactivate User
+
+@enduml

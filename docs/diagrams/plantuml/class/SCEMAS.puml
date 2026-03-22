@@ -1,0 +1,593 @@
+@startuml SCEMAS_SystemClassDiagram
+scale 0.4
+
+skinparam nodesep 50
+skinparam ranksep 70
+
+' =============================================================
+' SHARED TYPES
+' =============================================================
+class Request {
+  -endpoint : String
+  -userId : String
+  -role : String
+  -payload : Map
+  -timestamp : DateTime
+  -apiKey : String
+}
+
+class Result {
+  -success : Boolean
+  -data : Map
+  -errorMessage : String
+  -statusCode : int
+  -timestamp : DateTime
+}
+
+class Response {
+  -statusCode : int
+  -body : Map
+  -message : String
+  -timestamp : DateTime
+}
+
+class successResponse {
+  -result : Result
+  -resp : Response
+  +formatAndReturnSuccessResponse()
+}
+
+class errorResponse {
+  -statusCode : int
+  -resp : Response
+  +formatAndReturnErrorResponse()
+}
+
+entity Alert {
+  -alertId : String
+  -severity : String
+  -message : String
+  -status : String
+  -createdAt : DateTime
+  -updatedAt : DateTime
+  -zone : String
+  -metric : String
+  -sourceType : String
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+successResponse ..> Result
+successResponse ..> Response
+errorResponse   ..> Response
+Alert           --> AlertStatus
+
+' =============================================================
+' PACKAGE: PRESENTATION LAYER (PAC)
+' =============================================================
+package "Presentation Layer" {
+
+  class AccountAdminAgent {
+    +initiateAccountOperation(req : Request)
+  }
+
+  class ThresholdAdminAgent {
+    +initiateThresholdOperation(req : Request)
+  }
+
+  class DashboardAgent {
+    +displayData(data : Map)
+    +displayAlert(alert : Alert)
+    +displayAlerts()
+    +refreshView()
+  }
+
+  class APIFacade {
+    -req : Request
+    -result : Result
+    -resp : Response
+    +apiRequest(req : Request)
+    +validateRequest(req : Request) : Boolean
+    +authorizeRequest(req : Request) : Boolean
+    +dispatchRequest(req : Request) : Result
+    +formatResponse(result : Result) : Response
+    +returnResponse(resp : Response)
+  }
+
+  interface IThresholdService {
+    -action : String
+    -data : Map
+    +receiveRequest(action : String)
+    +validateInput(data : Map) : Boolean
+    +processAction(action : String, data : Map)
+  }
+
+  interface IAccountService {
+    -credentials : Map
+    -data : Map
+    +login(credentials : Map) : Boolean
+    +changeCredentials(data : Map)
+    +deactivateAccount(id : int)
+  }
+
+  interface IAlertsService {
+    -data : Map
+    -violation : Map
+    +evaluateTelemetry(data : Map)
+    +generateAlert(violation : Map) : Alert
+    +updateAlertStatus(id : int, status : String)
+  }
+
+  interface IAggregationService {
+    -data : Map
+    +performAggregations()
+    +showDataToDashboards(data : Map)
+  }
+
+  AccountAdminAgent   --> APIFacade
+  ThresholdAdminAgent --> APIFacade
+  DashboardAgent      --> APIFacade
+
+  APIFacade --> IThresholdService
+  APIFacade --> IAccountService
+  APIFacade --> IAlertsService
+  APIFacade --> IAggregationService
+
+  APIFacade         ..> Request
+  APIFacade         ..> Result
+  APIFacade         ..> Response
+  APIFacade         ..> successResponse
+  APIFacade         ..> errorResponse
+  AccountAdminAgent ..> Request
+  ThresholdAdminAgent ..> Request
+  DashboardAgent    ..> Alert
+  IAlertsService    ..> Alert
+}
+
+' =============================================================
+' PACKAGE: ACCOUNT MANAGEMENT
+' =============================================================
+package "Account Management" {
+
+  class AccountManagement {
+    -credentials : Map
+    -data : Map
+    +receiveRequest(action : String)
+    +validateInput(data : Map) : Boolean
+    +processAction(action : String, data : Map)
+    +validateUser() : Boolean
+    +login(credentials : Map) : Boolean
+    +changeCredentials(data : Map)
+    +deactivateAccount(id : int)
+  }
+
+  class Logins {
+    +parseInput(data : Map) : Map
+    +checkAccountExists() : Boolean
+    +tryPassword() : Boolean
+    +acceptLoginAttempt() : Boolean
+    +createAccount(data : Map)
+  }
+
+  class ChangeUserPass {
+    +editPassword()
+    +confirmChanges() : Boolean
+    +writeToDB(aid : int) : Boolean
+  }
+
+  class DeactivateAccount {
+    +confirmDeactivation()
+    +deactivateAccount(a : Account)
+    +updateRepository(aid : int)
+  }
+
+  interface AccountRepository {
+    +create(t : Account)
+    +update(t : Account)
+    +delete(id : int)
+    +deleteInactive()
+    +findById(id : int) : Account
+    +findAll() : List
+  }
+
+  entity AccountDB {
+    +create(t : Account)
+    +update(t : Account)
+    +delete(id : int)
+    +deleteInactive()
+    +findById(id : int) : Account
+    +findAll() : List
+  }
+
+  entity Account {
+    -aid : int
+    -name : String
+    -age : int
+    -address : String
+    -email : String
+    -password : String
+    -clearance : String
+    -isActive : Boolean
+    -createdAt : DateTime
+    -updatedAt : DateTime
+    +deactivate() : Boolean
+    +decrypt(password : String, aid : int) : String
+    +encrypt(aid : int)
+    +getDetails() : List
+  }
+
+  AccountManagement  --> Logins
+  AccountManagement  --> ChangeUserPass
+  AccountManagement  --> DeactivateAccount
+  Logins             ..> AccountRepository
+  ChangeUserPass     ..> AccountRepository
+  DeactivateAccount  ..> AccountRepository
+  AccountDB          ..|> AccountRepository
+  AccountDB          *-- Account
+}
+
+' =============================================================
+' PACKAGE: THRESHOLD MANAGEMENT
+' =============================================================
+package "Threshold Management" {
+
+  class ThresholdManagement {
+    -action : String
+    -data : Map
+    +receiveRequest(action : String)
+    +validateInput(data : Map) : Boolean
+    +processAction(action : String, data : Map)
+  }
+
+  class HighLevelUI {
+    -thresholdList : List
+    +displayThresholds()
+    +displayForm()
+    +displayConfirmation()
+    +displayError(msg : String)
+  }
+
+  class CreateThreshold {
+    -metricType : String
+    -zone : String
+    -condition : String
+    -severityLevel : String
+    +inputThresholdData() : Map
+    +validateData(data : Map) : Boolean
+    +createThreshold(data : Map) : Threshold
+    +saveThreshold(t : Threshold)
+  }
+
+  class EditThreshold {
+    -id : int
+    -threshold : Threshold
+    -changes : Map
+    +loadThreshold(id : int) : Threshold
+    +editThreshold(t : Threshold, changes : Map)
+    +validateChanges(changes : Map) : Boolean
+    +saveThreshold(t : Threshold)
+  }
+
+  class DeleteThreshold {
+    -id : int
+    -threshold : Threshold
+    -confirmed : Boolean
+    +receiveDeleteRequest(id : int)
+    +retrieveThreshold(id : int) : Threshold
+    +deleteThreshold(t : Threshold)
+    +updateRepository(id : int)
+  }
+
+  interface IThresholdRepository {
+    +save(t : Threshold)
+    +update(t : Threshold)
+    +delete(id : int)
+    +findById(id : int) : Threshold
+    +findAll() : List
+    +findActive() : List
+  }
+
+  entity ThresholdDB {
+    -threshold : Threshold
+    +save(t : Threshold)
+    +update(t : Threshold)
+    +delete(id : int)
+    +findById(id : int) : Threshold
+    +findAll() : List
+    +findActive() : List
+    +getActiveThresholdRules() : List
+  }
+
+  entity Threshold {
+    -id : int
+    -metricType : String
+    -zone : String
+    -condition : String
+    -severityLevel : String
+    -isActive : Boolean
+    -createdAt : DateTime
+    -updatedAt : DateTime
+    +activate()
+    +deactivate()
+    +getDetails() : Map
+  }
+
+  HighLevelUI         --> ThresholdManagement
+  ThresholdManagement --> CreateThreshold
+  ThresholdManagement --> EditThreshold
+  ThresholdManagement --> DeleteThreshold
+  CreateThreshold     ..> IThresholdRepository
+  EditThreshold       ..> IThresholdRepository
+  DeleteThreshold     ..> IThresholdRepository
+  ThresholdDB         ..|> IThresholdRepository
+  ThresholdDB         *-- Threshold
+}
+
+' =============================================================
+' PACKAGE: ALERTS MANAGEMENT
+' =============================================================
+package "Alerts Management" {
+
+  class AlertsManagement {
+    -data : Map
+    -violation : Map
+    +evaluateTelemetry(data : Map)
+    +generateAlert(violation : Map) : Alert
+    +updateAlertStatus(id : int, status : String)
+    +evaluateThresholdViolations()
+    +detectAnomalousTrends()
+    +createAlert(alert : Alert)
+    +publishAlertUpdate(alert : Alert)
+  }
+
+  class NotificationService {
+    +sendAlertCreated(alert : Alert)
+    +sendStatusChangeNotification(alert : Alert)
+  }
+
+  entity AlertsDB {
+    +storeAlert(alert : Alert)
+    +updateAlert(alert : Alert)
+    +getActiveAlerts() : List
+    +getHistoricalAlerts() : List
+  }
+
+  AlertsManagement  --> AlertsDB
+  AlertsManagement  --> NotificationService
+  AlertsDB          --> Alert
+  NotificationService ..> Alert
+}
+
+' =============================================================
+' PACKAGE: DATA VALIDATION
+' =============================================================
+package "Data Validation" {
+
+  interface IValidationComponent {
+    +execute()
+  }
+
+  class DataValidationManagement {
+    +validateIncomingData()
+    +coordinateValidation()
+  }
+
+  class EnsureMQTTCompliance {
+    +parsePacket() : Boolean
+    +validateMQTTFormat() : Boolean
+  }
+
+  class SensorMonitor {
+    +monitorSensorData()
+    +detectAnomalies() : Boolean
+  }
+
+  class StoreValidatedData {
+    +storeData()
+    +sendToTimeSeriesDB()
+  }
+
+  class ValidationEventLog {
+    +logEvent(e : EventLog)
+    +attachTimestamp(e : EventLog)
+    +formatLog(e : EventLog) : String
+  }
+
+  entity ValidSensorDataDB {
+    +store()
+    +retrieveHistoricalData() : List
+    +getValidatedSensorData() : List
+  }
+
+  entity EventLog {
+    -eventId : int
+    -eventType : String
+    -message : String
+    -source : String
+    -timestamp : DateTime
+    -status : String
+    +createLog(eventType : String, message : String, source : String) : EventLog
+    +updateStatus(status : String)
+    +getDetails() : Map
+  }
+
+  IValidationComponent     <|.. EnsureMQTTCompliance
+  IValidationComponent     <|.. SensorMonitor
+  IValidationComponent     <|.. StoreValidatedData
+  DataValidationManagement --> IValidationComponent
+  EnsureMQTTCompliance     --> ValidationEventLog
+  SensorMonitor            --> ValidSensorDataDB
+  StoreValidatedData       --> ValidSensorDataDB
+  ValidationEventLog       --> EventLog
+}
+
+' =============================================================
+' PACKAGE: AGGREGATION MANAGEMENT
+' =============================================================
+package "Aggregation Management" {
+
+  class AggregationManagement {
+    -data : Map
+    +performAggregations()
+    +showDataToDashboards(data : Map)
+  }
+
+  class PerformAggregations {
+    -zone : String
+    -interval : String
+    -metricType : String
+    +computeAggregatedMetrics(data : Map) : AggregatedData
+    +saveResult(d : AggregatedData)
+  }
+
+  class ShowDataToDashboards {
+    -zone : String
+    +fetchAggregatedData(zone : String) : List
+    +sendDataToDashboard(data : Map)
+  }
+
+  interface IAggregatedDataRepository {
+    +save(d : AggregatedData)
+    +findByZone(zone : String) : List
+    +findByInterval(interval : String) : List
+    +findLatest(zone : String) : AggregatedData
+  }
+
+  entity AggregatedEnvironmentalDataDB {
+    -aggregatedData : AggregatedData
+    +save(d : AggregatedData)
+    +findByZone(zone : String) : List
+    +findByInterval(interval : String) : List
+    +findLatest(zone : String) : AggregatedData
+    +getAggregatedEnvironmentalData(zoneId : String, metric : String) : List
+  }
+
+  entity AggregatedData {
+    -id : int
+    -zone : String
+    -metricType : String
+    -value : double
+    -interval : String
+    -timestamp : DateTime
+    +getSummary() : Map
+  }
+
+  AggregationManagement         --> PerformAggregations
+  AggregationManagement         --> ShowDataToDashboards
+  PerformAggregations           ..> IAggregatedDataRepository
+  ShowDataToDashboards          ..> IAggregatedDataRepository
+  AggregatedEnvironmentalDataDB ..|> IAggregatedDataRepository
+  AggregatedEnvironmentalDataDB *-- AggregatedData
+  PerformAggregations           ..> AggregatedData
+  IAggregatedDataRepository     ..> AggregatedData
+}
+
+' =============================================================
+' PACKAGE: API MANAGEMENT
+' =============================================================
+package "API Management" {
+
+  class APIManagement {
+    +processReadOnlyRequest(request : APIRequest) : APIResponse
+    +validateRequest(request : APIRequest) : Boolean
+    +enforceRateLimit(request : APIRequest) : Boolean
+    +fetchAggregatedData(zoneId : String, metric : String) : List
+    +buildSuccessResponse(data : List) : APIResponse
+    +buildErrorResponse(message : String) : APIResponse
+  }
+
+  class PublicAPIEndpoint {
+    +receiveRequest(request : APIRequest)
+    +returnResponse(response : APIResponse)
+  }
+
+  class RateLimiter {
+    +checkRateLimit(userId : String) : Boolean
+  }
+
+  class AccessControl {
+    +authorizeRequest(request : APIRequest) : Boolean
+  }
+
+  entity UsageLog {
+    +recordRequestMetadata(request : APIRequest)
+    +getUserRequestHistory(userId : String) : List
+    +recordRateLimitViolation(userId : String)
+  }
+
+  class APIRequest {
+    -userId : String
+    -endpoint : String
+    -zoneId : String
+    -metric : String
+    -timestamp : DateTime
+  }
+
+  class APIResponse {
+    -statusCode : int
+    -message : String
+    -data : List
+  }
+
+  PublicAPIEndpoint --> APIManagement
+  APIManagement     --> RateLimiter
+  APIManagement     --> AccessControl
+  APIManagement     --> UsageLog
+  RateLimiter       --> UsageLog
+  AccessControl     --> UsageLog
+  PublicAPIEndpoint ..> APIRequest
+  PublicAPIEndpoint ..> APIResponse
+}
+
+' =============================================================
+' CROSS-SUBSYSTEM CONNECTIONS
+' =============================================================
+
+' Implementation arrows — direction controls package placement
+ThresholdManagement   -down-|>  IThresholdService
+AccountManagement     -right-|> IAccountService
+AggregationManagement -up-|>    IAggregationService
+AlertsManagement      -left-|>  IAlertsService
+
+' Hidden anchors to cluster related packages together
+' Threshold <-> Alerts (share ThresholdDB)
+ThresholdManagement -[hidden]down- AlertsManagement
+
+' Data Validation <-> Aggregation (share ValidSensorDataDB)
+DataValidationManagement -[hidden]right- AggregationManagement
+
+' Aggregation <-> API (share AggregatedEnvironmentalDataDB)
+AggregationManagement -[hidden]right- APIManagement
+
+' ShowDataToDashboards pushes to DashboardAgent
+ShowDataToDashboards -up-> DashboardAgent
+
+' NotificationService pushes alerts to DashboardAgent
+NotificationService -up-> DashboardAgent
+
+' AlertsManagement reads ThresholdDB — short hop, adjacent package
+AlertsManagement -up-> ThresholdDB
+
+' AlertsManagement reads AggregatedEnvironmentalDataDB
+AlertsManagement -down-> AggregatedEnvironmentalDataDB
+
+' AlertsManagement reads ValidSensorDataDB
+AlertsManagement -down-> ValidSensorDataDB
+
+' AlertsManagement notifies APIFacade
+AlertsManagement -left-> APIFacade
+
+' PerformAggregations reads ValidSensorDataDB — adjacent package
+PerformAggregations -left-> ValidSensorDataDB
+
+' APIManagement reads aggregated data — adjacent package
+APIManagement -left-> AggregatedEnvironmentalDataDB
+
+' ThresholdDB feeds AlertsManagement
+ThresholdDB -down-> AlertsManagement
+
+@enduml
