@@ -1,0 +1,35 @@
+@startuml AggregationManagement_statechart
+hide empty description
+top to bottom direction
+
+state "AggregationManagement\n----\ndata\n----\nreceive and route aggregation request" as AggregationManagement
+
+state "PerformAggregations\n----\nzone\ninterval\nmetricType\n----\ncompute aggregated metrics from validated sensor data" as PerformAggregations
+
+state "ShowDataToDashboards\n----\nzone\n----\nfetch aggregated results and push to dashboard" as ShowDataToDashboards
+
+state "AggregatedEnvironmentalDataDB\n----\naggregatedData\n----\npersist or retrieve aggregated data from repository" as AggregatedEnvironmentalDataDB
+
+state "success\n----\nsuccess_message\n----\ndisplay success message" as success
+
+state "error\n----\nerror_message\n----\ndisplay error message" as error
+
+[*] --> AggregationManagement
+
+AggregationManagement --> PerformAggregations   : performAggregations
+AggregationManagement --> ShowDataToDashboards  : showDataToDashboards
+
+PerformAggregations --> error                          : [data unavailable / invalid]
+PerformAggregations --> AggregatedEnvironmentalDataDB  : [metrics computed]
+
+ShowDataToDashboards --> error                         : [no data found]
+ShowDataToDashboards --> AggregatedEnvironmentalDataDB : fetchAggregatedData
+
+AggregatedEnvironmentalDataDB --> success : success
+AggregatedEnvironmentalDataDB --> error   : failure
+
+error --> AggregationManagement : retry
+success --> [*]
+error --> [*]
+
+@enduml
