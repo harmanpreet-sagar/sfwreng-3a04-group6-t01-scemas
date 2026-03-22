@@ -1,0 +1,36 @@
+@startuml BE2
+
+actor "Government Administrator" as Admin
+participant "Dashboard" as Dash
+participant "API Facade" as API
+participant "Alert Management" as AlertMgmt
+participant "Validation Service" as Validation
+participant "Threshold Manager" as Thresh
+participant "Data Analyst" as Analyst
+participant "Algorithm Service" as Algo
+participant "Recommendation Service" as Rec
+participant "Sensor Company Rep" as SensorRep
+database "Alert DB" as DB
+participant "Audit Log" as Audit
+
+Admin -> Dash : Access dashboard
+Dash -> API : Send request
+API -> AlertMgmt : Forward request
+
+AlertMgmt -> Validation : Validate threshold data
+Validation --> AlertMgmt : Validation result
+
+AlertMgmt -> Thresh : Create threshold
+Thresh -> DB : Store threshold
+DB --> Thresh : Confirmation
+
+AlertMgmt -> Audit : Log action
+
+Thresh -> Analyst : Notify new threshold
+Analyst -> Algo : Update algorithms
+Algo -> Audit : Log update
+
+SensorRep -> Rec : Submit recommendation
+Rec -> DB : Store recommendation
+
+@enduml

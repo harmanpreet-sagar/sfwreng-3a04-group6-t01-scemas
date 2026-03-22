@@ -1,0 +1,112 @@
+@startuml AggregationManagement
+
+' =========================
+' ACCOUNT MANAGEMENT
+' =========================
+class "Account Management (Controller)" as AccountMgmt {
+  +authenticateUser()
+  +manageAccount()
+  +enforceRBAC()
+}
+
+class "Account DB" as AccountDB <<database>>
+AccountMgmt --> AccountDB
+
+' =========================
+' DATA VALIDATION
+' =========================
+class "Data Validation (Controller)" as Validation {
+  +validateSensorData()
+  +checkMQTTCompliance()
+  +logValidationEvent()
+}
+
+class "Valid Sensor Data DB" as ValidDB <<database>>
+Validation --> ValidDB
+
+' =========================
+' AGGREGATION MANAGEMENT
+' =========================
+class "Aggregation Management (Controller)" as AggMgmt {
+  +performAggregations()
+  +showDataToDashboards()
+}
+
+class "Perform Aggregations (Controller)" as PerformAgg {
+  +computeAggregatedMetrics()
+}
+
+class "Show Data to Dashboards (Controller)" as ShowDash {
+  +sendDataToDashboard()
+}
+
+class "Aggregated Environmental Data DB" as AggDB <<database>>
+
+AggMgmt --> PerformAgg
+AggMgmt --> ShowDash
+PerformAgg --> AggMgmt
+PerformAgg --> ValidDB
+PerformAgg --> AggDB
+
+ShowDash --> AggMgmt
+ShowDash --> AggDB
+
+' =========================
+' THRESHOLD MANAGEMENT
+' =========================
+class "Threshold Management (Controller)" as ThreshMgmt {
+  +createThreshold()
+  +updateThreshold()
+  +deleteThreshold()
+}
+
+class "Threshold DB" as ThreshDB <<database>>
+ThreshMgmt --> ThreshDB
+
+' =========================
+' ALERTS MANAGEMENT
+' =========================
+class "Alerts Management (Controller)" as AlertsMgmt {
+  +evaluateThresholds()
+  +detectViolation()
+  +createAlert()
+  +updateAlertStatus()
+}
+
+class "Alert DB" as AlertDB <<database>>
+
+AlertsMgmt --> AlertDB
+AlertsMgmt --> ThreshMgmt
+AlertsMgmt --> AggMgmt
+
+' =========================
+' API MANAGEMENT
+' =========================
+class "API Management (Controller)" as APIMgmt {
+  +handleRequest()
+  +validateRequest()
+  +rateLimitRequest()
+  +returnAggregatedData()
+}
+
+APIMgmt --> AggMgmt
+APIMgmt --> AccountMgmt
+
+' =========================
+' DASHBOARD AGENT
+' =========================
+class "Dashboard Agent" as Dash {
+  +displayAggregatedData()
+  +displayAlerts()
+}
+
+Dash --> AggMgmt
+Dash --> AlertsMgmt
+
+' =========================
+' SYSTEM FLOW CONSISTENCY
+' =========================
+Validation --> AggMgmt
+AggMgmt --> AlertsMgmt
+
+@enduml
