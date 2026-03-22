@@ -1,0 +1,112 @@
+@startuml AggregationManagement
+
+' =========================
+' ACCOUNT MANAGEMENT
+' =========================
+class "Account Management" as AccountMgmt {
+  +authenticateUser()
+  +manageAccount()
+  +enforceRBAC()
+}
+
+entity "Account DB" as AccountDB
+AccountMgmt --> AccountDB
+
+' =========================
+' DATA VALIDATION
+' =========================
+class "Data Validation" as Validation {
+  +validateSensorData()
+  +checkMQTTCompliance()
+  +logValidationEvent()
+}
+
+entity "Valid Sensor Data DB" as ValidDB
+Validation --> ValidDB
+
+' =========================
+' AGGREGATION MANAGEMENT
+' =========================
+class "Aggregation Management" as AggMgmt {
+  +performAggregations()
+  +showDataToDashboards()
+}
+
+class "Perform Aggregations" as PerformAgg {
+  +computeAggregatedMetrics()
+}
+
+class "Show Data to Dashboards" as ShowDash {
+  +sendDataToDashboard()
+}
+
+entity "Aggregated Environmental Data DB" as AggDB
+
+AggMgmt --> PerformAgg
+AggMgmt --> ShowDash
+PerformAgg --> AggMgmt
+PerformAgg --> ValidDB
+PerformAgg --> AggDB
+
+ShowDash --> AggMgmt
+ShowDash --> AggDB
+
+' =========================
+' THRESHOLD MANAGEMENT
+' =========================
+class "Threshold Management" as ThreshMgmt {
+  +createThreshold()
+  +updateThreshold()
+  +deleteThreshold()
+}
+
+entity "Threshold DB" as ThreshDB
+ThreshMgmt --> ThreshDB
+
+' =========================
+' ALERTS MANAGEMENT
+' =========================
+class "Alerts Management" as AlertsMgmt {
+  +evaluateThresholds()
+  +detectViolation()
+  +createAlert()
+  +updateAlertStatus()
+}
+
+entity "Alert DB" as AlertDB
+
+AlertsMgmt --> AlertDB
+AlertsMgmt --> ThreshMgmt
+AlertsMgmt --> AggMgmt
+
+' =========================
+' API MANAGEMENT
+' =========================
+class "API Management" as APIMgmt {
+  +handleRequest()
+  +validateRequest()
+  +rateLimitRequest()
+  +returnAggregatedData()
+}
+
+APIMgmt --> AggMgmt
+APIMgmt --> AccountMgmt
+
+' =========================
+' DASHBOARD AGENT
+' =========================
+class "Dashboard Agent" as Dash {
+  +displayAggregatedData()
+  +displayAlerts()
+}
+
+Dash --> AggMgmt
+Dash --> AlertsMgmt
+
+' =========================
+' SYSTEM FLOW CONSISTENCY
+' =========================
+Validation --> AggMgmt
+AggMgmt --> AlertsMgmt
+
+@enduml
