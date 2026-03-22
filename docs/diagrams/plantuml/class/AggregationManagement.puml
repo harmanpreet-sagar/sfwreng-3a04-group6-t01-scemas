@@ -3,44 +3,44 @@
 ' =========================
 ' ACCOUNT MANAGEMENT
 ' =========================
-class "Account Management (Controller)" as AccountMgmt {
+class "Account Management" as AccountMgmt {
   +authenticateUser()
   +manageAccount()
   +enforceRBAC()
 }
 
-class "Account DB" as AccountDB <<database>>
+entity "Account DB" as AccountDB
 AccountMgmt --> AccountDB
 
 ' =========================
 ' DATA VALIDATION
 ' =========================
-class "Data Validation (Controller)" as Validation {
+class "Data Validation" as Validation {
   +validateSensorData()
   +checkMQTTCompliance()
   +logValidationEvent()
 }
 
-class "Valid Sensor Data DB" as ValidDB <<database>>
+entity "Valid Sensor Data DB" as ValidDB
 Validation --> ValidDB
 
 ' =========================
 ' AGGREGATION MANAGEMENT
 ' =========================
-class "Aggregation Management (Controller)" as AggMgmt {
+class "Aggregation Management" as AggMgmt {
   +performAggregations()
   +showDataToDashboards()
 }
 
-class "Perform Aggregations (Controller)" as PerformAgg {
+class "Perform Aggregations" as PerformAgg {
   +computeAggregatedMetrics()
 }
 
-class "Show Data to Dashboards (Controller)" as ShowDash {
+class "Show Data to Dashboards" as ShowDash {
   +sendDataToDashboard()
 }
 
-class "Aggregated Environmental Data DB" as AggDB <<database>>
+entity "Aggregated Environmental Data DB" as AggDB
 
 AggMgmt --> PerformAgg
 AggMgmt --> ShowDash
@@ -54,26 +54,26 @@ ShowDash --> AggDB
 ' =========================
 ' THRESHOLD MANAGEMENT
 ' =========================
-class "Threshold Management (Controller)" as ThreshMgmt {
+class "Threshold Management" as ThreshMgmt {
   +createThreshold()
   +updateThreshold()
   +deleteThreshold()
 }
 
-class "Threshold DB" as ThreshDB <<database>>
+entity "Threshold DB" as ThreshDB
 ThreshMgmt --> ThreshDB
 
 ' =========================
 ' ALERTS MANAGEMENT
 ' =========================
-class "Alerts Management (Controller)" as AlertsMgmt {
+class "Alerts Management" as AlertsMgmt {
   +evaluateThresholds()
   +detectViolation()
   +createAlert()
   +updateAlertStatus()
 }
 
-class "Alert DB" as AlertDB <<database>>
+entity "Alert DB" as AlertDB
 
 AlertsMgmt --> AlertDB
 AlertsMgmt --> ThreshMgmt
@@ -82,7 +82,7 @@ AlertsMgmt --> AggMgmt
 ' =========================
 ' API MANAGEMENT
 ' =========================
-class "API Management (Controller)" as APIMgmt {
+class "API Management" as APIMgmt {
   +handleRequest()
   +validateRequest()
   +rateLimitRequest()
