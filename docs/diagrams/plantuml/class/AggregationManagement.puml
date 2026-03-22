@@ -1,112 +1,152 @@
-@startuml AggregationManagement
+@startuml AggregationManagement_ClassDiagram
 
 ' =========================
-' ACCOUNT MANAGEMENT
+' BOUNDARY
 ' =========================
-class "Account Management" as AccountMgmt {
-  +authenticateUser()
-  +manageAccount()
-  +enforceRBAC()
+class DashboardAgent {
+  +displayData(data : Map)
+  +displayAlert(alert : Alert)
 }
 
-entity "Account DB" as AccountDB
-AccountMgmt --> AccountDB
-
 ' =========================
-' DATA VALIDATION
+' API FACADE
 ' =========================
-class "Data Validation" as Validation {
-  +validateSensorData()
-  +checkMQTTCompliance()
-  +logValidationEvent()
+class APIFacade {
+  -req : Request
+  -result : Result
+  -resp : Response
+  +apiRequest(req : Request)
+  +validateRequest(req : Request) : Boolean
+  +authorizeRequest(req : Request) : Boolean
+  +dispatchRequest(req : Request) : Result
+  +formatResponse(result : Result) : Response
+  +returnResponse(resp : Response)
 }
 
-entity "Valid Sensor Data DB" as ValidDB
-Validation --> ValidDB
+' =========================
+' SERVICE INTERFACE
+' =========================
+interface IAggregationService {
+  -data : Map
+  +performAggregations()
+  +showDataToDashboards(data : Map)
+}
 
 ' =========================
 ' AGGREGATION MANAGEMENT
 ' =========================
-class "Aggregation Management" as AggMgmt {
+class AggregationManagement {
+  -data : Map
   +performAggregations()
-  +showDataToDashboards()
+  +showDataToDashboards(data : Map)
 }
 
-class "Perform Aggregations" as PerformAgg {
-  +computeAggregatedMetrics()
+class PerformAggregations {
+  -zone : String
+  -interval : String
+  -metricType : String
+  +computeAggregatedMetrics(data : Map) : AggregatedData
+  +saveResult(d : AggregatedData)
 }
 
-class "Show Data to Dashboards" as ShowDash {
-  +sendDataToDashboard()
+class ShowDataToDashboards {
+  -zone : String
+  +fetchAggregatedData(zone : String) : List
+  +sendDataToDashboard(data : Map)
 }
 
-entity "Aggregated Environmental Data DB" as AggDB
-
-AggMgmt --> PerformAgg
-AggMgmt --> ShowDash
-PerformAgg --> AggMgmt
-PerformAgg --> ValidDB
-PerformAgg --> AggDB
-
-ShowDash --> AggMgmt
-ShowDash --> AggDB
-
 ' =========================
-' THRESHOLD MANAGEMENT
+' REPOSITORY INTERFACE
 ' =========================
-class "Threshold Management" as ThreshMgmt {
-  +createThreshold()
-  +updateThreshold()
-  +deleteThreshold()
+interface IAggregatedDataRepository {
+  +save(d : AggregatedData)
+  +findByZone(zone : String) : List
+  +findByInterval(interval : String) : List
+  +findLatest(zone : String) : AggregatedData
 }
 
-entity "Threshold DB" as ThreshDB
-ThreshMgmt --> ThreshDB
-
 ' =========================
-' ALERTS MANAGEMENT
+' DB ENTITY
 ' =========================
-class "Alerts Management" as AlertsMgmt {
-  +evaluateThresholds()
-  +detectViolation()
-  +createAlert()
-  +updateAlertStatus()
+entity AggregatedEnvironmentalDataDB {
+  -aggregatedData : AggregatedData
+  +save(d : AggregatedData)
+  +findByZone(zone : String) : List
+  +findByInterval(interval : String) : List
+  +findLatest(zone : String) : AggregatedData
 }
 
-entity "Alert DB" as AlertDB
-
-AlertsMgmt --> AlertDB
-AlertsMgmt --> ThreshMgmt
-AlertsMgmt --> AggMgmt
+entity AggregatedData {
+  -id : int
+  -zone : String
+  -metricType : String
+  -value : double
+  -interval : String
+  -timestamp : DateTime
+  +getSummary() : Map
+}
 
 ' =========================
-' API MANAGEMENT
+' EXTERNAL CONSUMERS
+' (owned elsewhere, directly read AggregatedEnvironmentalDataDB)
 ' =========================
-class "API Management" as APIMgmt {
+class AlertsManagement {
+  -data : Map
+  -violation : Map
+  +evaluateTelemetry(data : Map)
+  +generateAlert(violation : Map) : Alert
+  +updateAlertStatus(id : int, status : String)
+}
+
+class APIManagement {
   +handleRequest()
   +validateRequest()
   +rateLimitRequest()
   +returnAggregatedData()
 }
 
-APIMgmt --> AggMgmt
-APIMgmt --> AccountMgmt
+' External DB this subsystem reads from (owned by Data Validation)
+entity ValidSensorDataDB
 
 ' =========================
-' DASHBOARD AGENT
+' RELATIONSHIPS
 ' =========================
-class "Dashboard Agent" as Dash {
-  +displayAggregatedData()
-  +displayAlerts()
-}
 
-Dash --> AggMgmt
-Dash --> AlertsMgmt
+' Boundary triggers APIFacade
+DashboardAgent --> APIFacade
 
-' =========================
-' SYSTEM FLOW CONSISTENCY
-' =========================
-Validation --> AggMgmt
-AggMgmt --> AlertsMgmt
+' APIFacade routes through service interface
+APIFacade --> IAggregationService
+
+' AggregationManagement implements service interface
+AggregationManagement ..|> IAggregationService
+
+' AggregationManagement delegates to sub-controllers
+AggregationManagement --> PerformAggregations
+AggregationManagement --> ShowDataToDashboards
+
+' Sub-controllers depend on repository interface
+PerformAggregations ..> IAggregatedDataRepository
+ShowDataToDashboards ..> IAggregatedDataRepository
+
+' PerformAggregations reads raw validated data from external DB
+PerformAggregations --> ValidSensorDataDB
+
+' ShowDataToDashboards pushes results to Dashboard Agent
+ShowDataToDashboards --> DashboardAgent
+
+' AggregatedEnvironmentalDataDB implements repository interface
+AggregatedEnvironmentalDataDB ..|> IAggregatedDataRepository
+
+' AggregatedEnvironmentalDataDB owns AggregatedData records
+AggregatedEnvironmentalDataDB *-- AggregatedData
+
+' Classes that produce or consume AggregatedData as a type
+PerformAggregations ..> AggregatedData
+IAggregatedDataRepository ..> AggregatedData
+
+' AggregatedEnvironmentalDataDB supplies data to external consumers
+AggregatedEnvironmentalDataDB --> AlertsManagement
+AggregatedEnvironmentalDataDB --> APIManagement
 
 @enduml
