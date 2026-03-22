@@ -1,5 +1,12 @@
 @startuml BE4_CreateAccount
 
+participant "User" as User
+participant "SCEMAS" as SCEMAS
+participant "UserAuth" as UserAuth
+participant "AccountManagement" as AccountManagement
+database "AccountDB" as AccountDB
+participant "AuditLog" as AuditLog
+
 activate User
 
 User -> SCEMAS : select Create Account

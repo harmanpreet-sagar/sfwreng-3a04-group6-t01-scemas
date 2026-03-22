@@ -1,5 +1,13 @@
 @startuml BE1_Login
 
+participant "User" as User
+participant "SCEMAS" as SCEMAS
+participant "UserAuth" as UserAuth
+participant "AccountManagement" as AccountManagement
+database "AccountDB" as AccountDB
+participant "Dashboard" as Dashboard
+participant "AuditLog" as AuditLog
+
 activate User
 
 User -> SCEMAS : select Log In
