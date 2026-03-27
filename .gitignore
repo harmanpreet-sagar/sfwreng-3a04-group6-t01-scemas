@@ -25,7 +25,6 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 .pnpm-debug.log*
 
 # Python (if using Python)
@@ -64,3 +63,29 @@ out/
 ~$*.doc*
 ~$*.xls*
 ~$*.ppt*
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# MQTT/Mosquitto
+src/mosquitto/config/passwd
+src/mosquitto/data/
+src/mosquitto/log/
+
+# TLS Certificates (keep .crt and .key but ignore private keys in production)
+# Uncomment below if using real certificates in production
+# src/mosquitto/config/certs/*.key
+# src/mosquitto/config/certs/*.csr
+src/mosquitto/config/certs/*.srl
+
+# Frontend build
+src/frontend/dist/
+src/frontend/.vite/
+
+# Python additional
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
