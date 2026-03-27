@@ -21,19 +21,19 @@ fi
 
 # Compile all PlantUML diagrams
 echo "✓ Compiling class diagrams..."
-plantuml docs/diagrams/plantuml/class/*.puml -o ../compiled
+plantuml docs/diagrams/plantuml/class/*.puml -o ../../../compiled
 
 echo "✓ Compiling sequence diagrams..."
-plantuml docs/diagrams/plantuml/sequence/*.puml -o ../compiled
+plantuml docs/diagrams/plantuml/sequence/*.puml -o ../../../compiled
 
 echo "✓ Compiling state diagrams..."
-plantuml docs/diagrams/plantuml/state/*.puml -o ../compiled
+plantuml docs/diagrams/plantuml/state/*.puml -o ../../../compiled
 
 echo "✓ Compiling use case diagrams..."
-plantuml docs/diagrams/plantuml/usecase/*.puml -o ../compiled
+plantuml docs/diagrams/plantuml/usecase/*.puml -o ../../../compiled
 
 echo "✓ Compiling activity diagrams..."
-plantuml docs/diagrams/plantuml/activity/*.puml -o ../compiled 2>/dev/null || true
+plantuml docs/diagrams/plantuml/activity/*.puml -o ../../../compiled 2>/dev/null || true
 
 echo ""
 echo "=========================================="

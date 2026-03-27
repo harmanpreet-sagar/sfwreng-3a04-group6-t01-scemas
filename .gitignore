@@ -73,10 +73,10 @@ src/mosquitto/config/passwd
 src/mosquitto/data/
 src/mosquitto/log/
 
-# TLS Certificates (keep .crt and .key but ignore private keys in production)
-# Uncomment below if using real certificates in production
-# src/mosquitto/config/certs/*.key
-# src/mosquitto/config/certs/*.csr
+# TLS Certificates - NEVER commit private keys or certificate signing requests
+# Public certificates (.crt) can be committed for development
+src/mosquitto/config/certs/*.key
+src/mosquitto/config/certs/*.csr
 src/mosquitto/config/certs/*.srl
 
 # Frontend build

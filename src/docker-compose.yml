@@ -56,11 +56,11 @@ services:
     ports:
       - "3000:3000"  # Vite dev server port
     environment:
-      # Backend API endpoint for HTTP requests
-      - REACT_APP_API_URL=http://localhost:8000
+      # Backend API endpoint for HTTP requests (Vite uses VITE_ prefix)
+      - VITE_API_URL=http://localhost:8000
       # MQTT broker connection for real-time updates
-      - REACT_APP_MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
-      - REACT_APP_MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-8883}
+      - VITE_MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
+      - VITE_MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-8883}
     volumes:
       - ./frontend:/app           # Mount source for hot-reload
       - /app/node_modules         # Persist node_modules in container

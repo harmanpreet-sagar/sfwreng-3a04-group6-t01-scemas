@@ -23,7 +23,12 @@ fi
 # Check if MQTT certificates exist
 if [ ! -f mosquitto/config/certs/server.crt ]; then
     echo "✓ Generating MQTT TLS certificates..."
-    cd mosquitto/config/certs
+    
+    # Store current directory for reliable navigation
+    SRC_DIR="$(pwd)"
+    CERT_DIR="$SRC_DIR/mosquitto/config/certs"
+    
+    cd "$CERT_DIR"
     
     # Generate CA certificate
     openssl req -new -x509 -days 365 -extensions v3_ca \
@@ -38,7 +43,8 @@ if [ ! -f mosquitto/config/certs/server.crt ]; then
     openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
         -CAcreateserial -out server.crt -days 365
     
-    cd ../../..
+    # Return to src directory using stored path
+    cd "$SRC_DIR"
     echo "  ✓ Certificates generated successfully"
 else
     echo "✓ MQTT certificates already exist"
