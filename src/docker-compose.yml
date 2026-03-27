@@ -1,0 +1,81 @@
+# Docker Compose configuration for Threshold Management System
+# Orchestrates three main services: MQTT broker, backend API, and frontend UI
+version: '3.8'
+
+services:
+  # MQTT Message Broker - Handles real-time telemetry data streaming
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mqtt-broker
+    ports:
+      - "8883:8883"  # TLS-secured MQTT port
+    volumes:
+      - ./mosquitto/config:/mosquitto/config  # Configuration and TLS certificates
+      - mosquitto_data:/mosquitto/data        # Persistent message storage
+      - mosquitto_logs:/mosquitto/log         # Broker logs
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Backend API - FastAPI service implementing the API Facade pattern
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-api
+    ports:
+      - "8000:8000"  # FastAPI HTTP port
+    environment:
+      # Database configuration - Supabase PostgreSQL
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_DB_URL=${SUPABASE_DB_URL}
+      # Authentication secret for JWT token generation
+      - JWT_SECRET=${JWT_SECRET}
+      # SMS notification service credentials (Twilio)
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER}
+      - TWILIO_TO_NUMBER=${TWILIO_TO_NUMBER}
+      # MQTT connection settings (defaults to mosquitto service)
+      - MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
+      - MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-8883}
+    volumes:
+      - ./backend:/app  # Mount for hot-reload during development
+    depends_on:
+      - mosquitto  # Ensure MQTT broker starts first
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frontend UI - React application with TypeScript and Vite
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-app
+    ports:
+      - "3000:3000"  # Vite dev server port
+    environment:
+      # Backend API endpoint for HTTP requests
+      - REACT_APP_API_URL=http://localhost:8000
+      # MQTT broker connection for real-time updates
+      - REACT_APP_MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
+      - REACT_APP_MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-8883}
+    volumes:
+      - ./frontend:/app           # Mount source for hot-reload
+      - /app/node_modules         # Persist node_modules in container
+    depends_on:
+      - backend  # Ensure backend API is available
+    restart: unless-stopped
+    networks:
+      - app-network
+
+# Named volumes for persistent data storage
+volumes:
+  mosquitto_data:  # MQTT message persistence
+  mosquitto_logs:  # MQTT broker logs
+
+# Bridge network allows inter-container communication by service name
+networks:
+  app-network:
+    driver: bridge

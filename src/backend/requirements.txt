@@ -1,0 +1,26 @@
+# Web Framework and Server
+fastapi==0.115.0                      # Modern async web framework for building APIs
+uvicorn[standard]==0.32.0             # ASGI server with WebSocket and HTTP/2 support
+
+# Configuration Management
+python-dotenv==1.0.1                  # Load environment variables from .env files
+
+# Database Client
+supabase==2.9.0                       # Python client for Supabase (PostgreSQL)
+
+# MQTT Client
+paho-mqtt==2.1.0                      # MQTT protocol client for telemetry data streaming
+
+# SMS Notifications
+twilio==9.3.2                         # Twilio client for sending SMS alerts
+
+# Data Validation and Serialization
+pydantic==2.9.2                       # Data validation using Python type hints
+pydantic-settings==2.6.0              # Settings management with Pydantic
+
+# Authentication and Security
+python-jose[cryptography]==3.3.0      # JWT token creation and verification
+passlib[bcrypt]==1.7.4                # Password hashing with bcrypt algorithm
+
+# File Upload Support
+python-multipart==0.0.12              # Multipart form data parsing for file uploads
