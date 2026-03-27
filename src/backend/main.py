@@ -16,7 +16,7 @@ load_dotenv()
 app = FastAPI(
     title="SFWRENG 3A04 - Group 6 API",
     description="Backend API for Threshold Management System",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Enable CORS to allow frontend (running on different port/domain) to make requests
@@ -29,17 +29,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def root():
     """Root endpoint for basic API verification."""
     return {"message": "Welcome to Group 6 API"}
+
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint for container orchestration and monitoring."""
     return {"status": "healthy"}
 
+
 # Direct execution entry point for local development without Docker
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

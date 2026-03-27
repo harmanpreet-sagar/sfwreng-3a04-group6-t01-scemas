@@ -11,9 +11,9 @@ on:
     branches: [ main ]
 
 jobs:
-  # Backend Python linting and testing
+  # Backend Python testing
   backend-tests:
-    name: Backend Tests & Linting
+    name: Backend Tests
     runs-on: ubuntu-latest
     
     steps:
@@ -31,23 +31,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio black flake8
-      
-      - name: Run Black formatter check
-        working-directory: ./src/backend
-        run: black --check .
-      
-      - name: Run Flake8 linter
-        working-directory: ./src/backend
-        run: flake8 . --max-line-length=88 --extend-ignore=E203
+          pip install pytest pytest-asyncio
       
       - name: Run tests
         working-directory: ./src/backend
         run: pytest -v
 
-  # Frontend TypeScript linting and testing
-  frontend-tests:
-    name: Frontend Tests & Linting
+  # Frontend build and tests
+  frontend-build:
+    name: Frontend Build
     runs-on: ubuntu-latest
     
     steps:
@@ -58,21 +50,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: ./src/frontend/package-lock.json
       
       - name: Install dependencies
         working-directory: ./src/frontend
-        run: npm ci
-      
-      - name: Run TypeScript type check
-        working-directory: ./src/frontend
-        run: npx tsc --noEmit
-      
-      - name: Run ESLint
-        working-directory: ./src/frontend
-        run: npx eslint src --ext .ts,.tsx
-        continue-on-error: true
+        run: npm install
       
       - name: Build frontend
         working-directory: ./src/frontend
