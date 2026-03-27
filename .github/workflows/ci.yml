@@ -1,0 +1,125 @@
+# GitHub Actions CI/CD Pipeline
+# Runs on pull requests and pushes to main branch
+# Validates code quality, runs tests, and builds Docker images
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Backend Python linting and testing
+  backend-tests:
+    name: Backend Tests & Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        working-directory: ./src/backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio black flake8
+      
+      - name: Run Black formatter check
+        working-directory: ./src/backend
+        run: black --check .
+      
+      - name: Run Flake8 linter
+        working-directory: ./src/backend
+        run: flake8 . --max-line-length=88 --extend-ignore=E203
+      
+      - name: Run tests
+        working-directory: ./src/backend
+        run: pytest -v
+
+  # Frontend TypeScript linting and testing
+  frontend-tests:
+    name: Frontend Tests & Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./src/frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./src/frontend
+        run: npm ci
+      
+      - name: Run TypeScript type check
+        working-directory: ./src/frontend
+        run: npx tsc --noEmit
+      
+      - name: Run ESLint
+        working-directory: ./src/frontend
+        run: npx eslint src --ext .ts,.tsx
+        continue-on-error: true
+      
+      - name: Build frontend
+        working-directory: ./src/frontend
+        run: npm run build
+
+  # Docker build verification
+  docker-build:
+    name: Docker Build Verification
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build backend Docker image
+        working-directory: ./src
+        run: docker build -t backend:test ./backend
+      
+      - name: Build frontend Docker image
+        working-directory: ./src
+        run: docker build -t frontend:test ./frontend
+
+  # Security scanning for dependencies
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './src'
+          severity: 'CRITICAL,HIGH'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
