@@ -1,0 +1,30 @@
+/**
+ * Global Styles for Threshold Management System
+ * Base styling and layout utilities
+ */
+
+/* CSS Reset - ensures consistent rendering across browsers */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;  /* Include padding and border in element width/height */
+}
+
+/* Body styling with system font stack for native appearance */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;      /* Better font rendering on macOS */
+  -moz-osx-font-smoothing: grayscale;       /* Better font rendering on Firefox */
+}
+
+/* Main application container - centered layout for landing page */
+.App {
+  min-height: 100vh;          /* Full viewport height */
+  display: flex;
+  flex-direction: column;     /* Stack children vertically */
+  align-items: center;        /* Center horizontally */
+  justify-content: center;    /* Center vertically */
+  padding: 2rem;
+}
