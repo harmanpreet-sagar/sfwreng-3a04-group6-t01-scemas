@@ -28,3 +28,25 @@ def fetch_latest_aggregated_value(zone: str, metric: str) -> float | None:
     if row is None:
         return None
     return float(row["value"])
+
+
+def fetch_latest_row_per_zone_metric() -> list[dict]:
+    """
+    Latest aggregated row for each (zone, metric), using the greatest window_end.
+
+    Uses PostgreSQL DISTINCT ON (matches evaluator semantics for “current” values).
+    """
+    with db_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT DISTINCT ON (zone, metric)
+                    zone,
+                    metric,
+                    value,
+                    window_end
+                FROM public.aggregated_data
+                ORDER BY zone, metric, window_end DESC
+                """
+            )
+            return [dict(r) for r in cur.fetchall()]
