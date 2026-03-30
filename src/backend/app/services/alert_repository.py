@@ -1,0 +1,68 @@
+"""Persistence helpers for `public.alerts` (no HTTP layer)."""
+
+from __future__ import annotations
+
+from typing import Optional
+
+from psycopg.rows import dict_row
+
+from app.models.alert import AlertCreate, AlertResponse, AlertStatus
+from app.shared.db import db_connection
+
+
+def active_alert_exists_for_zone_metric(zone: str, metric: str) -> bool:
+    """Return True if an alert with status `active` already exists for this zone + metric."""
+    with db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT 1
+                FROM public.alerts
+                WHERE zone = %s AND metric = %s AND status = %s
+                LIMIT 1
+                """,
+                (zone, metric, AlertStatus.active.value),
+            )
+            return cur.fetchone() is not None
+
+
+def try_insert_active_alert(payload: AlertCreate) -> Optional[AlertResponse]:
+    """
+    Insert a new active alert. Returns None if a duplicate active (zone, metric) exists.
+
+    Relies on partial unique index uq_alerts_active_zone_metric and ON CONFLICT DO NOTHING.
+    """
+    with db_connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                INSERT INTO public.alerts (
+                    zone, metric, severity, message, status,
+                    observed_value, threshold_value, threshold_id
+                )
+                VALUES (
+                    %(zone)s, %(metric)s, %(severity)s, %(message)s, %(status)s,
+                    %(observed_value)s, %(threshold_value)s, %(threshold_id)s
+                )
+                ON CONFLICT (zone, metric) WHERE (status = 'active') DO NOTHING
+                RETURNING
+                    id, zone, metric, severity, message, status,
+                    observed_value, threshold_value, threshold_id,
+                    created_at, updated_at, acknowledged_at, resolved_at
+                """,
+                {
+                    "zone": payload.zone,
+                    "metric": payload.metric,
+                    "severity": payload.severity.value,
+                    "message": payload.message,
+                    "status": AlertStatus.active.value,
+                    "observed_value": payload.observed_value,
+                    "threshold_value": payload.threshold_value,
+                    "threshold_id": payload.threshold_id,
+                },
+            )
+            row = cur.fetchone()
+        conn.commit()
+    if row is None:
+        return None
+    return AlertResponse.model_validate(dict(row))
