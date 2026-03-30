@@ -8,12 +8,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.shared.deps_public_api import PublicApiKeyDep
+from app.shared.deps_public_api import PublicApiKeyRateLimitedDep
 
 router = APIRouter(prefix="/api/public", tags=["Public API"])
 
 
 @router.get("/whoami")
-def public_whoami(api_key: PublicApiKeyDep) -> dict:
+def public_whoami(api_key: PublicApiKeyRateLimitedDep) -> dict:
     """Returns validated key metadata (for curl / integration checks only)."""
     return {"key_id": api_key.id, "label": api_key.label}

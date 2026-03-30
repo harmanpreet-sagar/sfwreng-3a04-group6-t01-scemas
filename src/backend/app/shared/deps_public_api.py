@@ -1,7 +1,10 @@
 """
 FastAPI dependency: validate public API keys from the Authorization header.
 
-Separate from operator/admin JWT auth. Use `Depends(require_public_api_key)` on public routes.
+Separate from operator/admin JWT auth.
+
+- `PublicApiKeyDep` — key validation only.
+- `PublicApiKeyRateLimitedDep` — validation plus 100 req/min per key (in-memory).
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ from fastapi import Depends, Header, HTTPException
 from app.models.public_api_key import PublicApiKeyAuth
 from app.services.api_key_repository import fetch_active_api_key_by_hash
 from app.shared.api_key_hash import api_key_sha256_hex
+from app.shared.public_api_rate_limiter import public_api_rate_limiter
 
 
 def _extract_bearer_token(authorization: Optional[str]) -> str:
@@ -69,3 +73,33 @@ def require_public_api_key(
 
 
 PublicApiKeyDep = Annotated[PublicApiKeyAuth, Depends(require_public_api_key)]
+
+
+def enforce_public_api_rate_limit(
+    api_key: PublicApiKeyDep,
+) -> PublicApiKeyAuth:
+    """
+    Compose after API key validation: 100 req/min per key (in-memory sliding window).
+
+    Use `PublicApiKeyRateLimitedDep` on public routes that should be throttled.
+    """
+    denied = public_api_rate_limiter.try_acquire(api_key.id)
+    if denied is not None:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "rate_limit_exceeded",
+                "message": "Too many requests for this API key. Try again later.",
+                "key_id": api_key.id,
+                "limit": denied.limit,
+                "window_seconds": denied.window_seconds,
+                "retry_after_seconds": denied.retry_after_seconds,
+            },
+            headers={"Retry-After": str(denied.retry_after_seconds)},
+        )
+    return api_key
+
+
+PublicApiKeyRateLimitedDep = Annotated[
+    PublicApiKeyAuth, Depends(enforce_public_api_rate_limit)
+]
