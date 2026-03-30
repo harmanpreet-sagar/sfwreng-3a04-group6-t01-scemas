@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from app.models.alert import AlertCreate, AlertResponse, AlertSeverity
+from app.models.alert import AlertCreate, AlertResponse, AlertSeverity, AlertStatus
 from app.shared.audit import log_audit_event
 
 from . import alert_repository
@@ -61,3 +61,20 @@ class AlertService:
     def active_alert_exists_for_zone_metric(zone: str, metric: str) -> bool:
         """Convenience wrapper for callers that need to branch before heavier work."""
         return alert_repository.active_alert_exists_for_zone_metric(zone, metric)
+
+    @staticmethod
+    def list_alerts(
+        *,
+        status: Optional[AlertStatus] = None,
+        zone: Optional[str] = None,
+        severity: Optional[AlertSeverity] = None,
+    ) -> list[AlertResponse]:
+        """Read-only list for operators; newest first in repository."""
+        z = (zone or "").strip() or None
+        return alert_repository.list_alerts(
+            status=status, zone=z, severity=severity
+        )
+
+    @staticmethod
+    def get_alert_by_id(alert_id: int) -> Optional[AlertResponse]:
+        return alert_repository.get_alert_by_id(alert_id)
