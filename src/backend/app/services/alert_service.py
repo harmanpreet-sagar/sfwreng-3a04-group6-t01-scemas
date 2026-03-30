@@ -12,6 +12,12 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.models.alert import AlertCreate, AlertResponse, AlertSeverity, AlertStatus
+from app.shared.alert_sse_broadcaster import (
+    ALERT_SSE_ACKNOWLEDGED,
+    ALERT_SSE_CREATED,
+    ALERT_SSE_RESOLVED,
+    publish_alert_sse,
+)
 from app.shared.audit import log_audit_event
 
 from . import alert_repository
@@ -65,6 +71,7 @@ class AlertService:
         )
         if inserted.severity == AlertSeverity.critical:
             send_critical_alert_sms_if_configured(inserted)
+        publish_alert_sse(inserted, ALERT_SSE_CREATED)
         return CreateAlertOutcome(created=True, alert=inserted)
 
     @staticmethod
@@ -103,6 +110,7 @@ class AlertService:
                     "status": updated.status.value,
                 },
             )
+            publish_alert_sse(updated, ALERT_SSE_ACKNOWLEDGED)
             return AlertTransitionOutcome(alert=updated)
 
         previous = alert_repository.get_alert_by_id(alert_id)
@@ -127,6 +135,7 @@ class AlertService:
                     "status": updated.status.value,
                 },
             )
+            publish_alert_sse(updated, ALERT_SSE_RESOLVED)
             return AlertTransitionOutcome(alert=updated)
 
         previous = alert_repository.get_alert_by_id(alert_id)

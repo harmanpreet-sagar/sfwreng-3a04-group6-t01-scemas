@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 
 from app.models.alert import AlertListResponse, AlertResponse, AlertSeverity, AlertStatus
 from app.services.alert_service import AlertService
+from app.shared.alert_sse_broadcaster import alert_sse_broadcaster
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
@@ -28,6 +30,20 @@ def get_alerts(
 ) -> AlertListResponse:
     rows = AlertService.list_alerts(status=status, zone=zone, severity=severity)
     return AlertListResponse(alerts=rows, total=len(rows))
+
+
+@router.get("/stream")
+async def alert_event_stream(request: Request) -> StreamingResponse:
+    """Server-Sent Events stream of new/updated alerts (in-memory PoC)."""
+    return StreamingResponse(
+        alert_sse_broadcaster.stream(request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.patch("/{alert_id}/acknowledge", response_model=AlertResponse)
