@@ -11,10 +11,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from app.models.alert import AlertCreate, AlertResponse
+from app.models.alert import AlertCreate, AlertResponse, AlertSeverity
 from app.shared.audit import log_audit_event
 
 from . import alert_repository
+from .notification_service import send_critical_alert_sms_if_configured
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,8 @@ class AlertService:
                 "threshold_id": inserted.threshold_id,
             },
         )
+        if inserted.severity == AlertSeverity.critical:
+            send_critical_alert_sms_if_configured(inserted)
         return CreateAlertOutcome(created=True, alert=inserted)
 
     @staticmethod

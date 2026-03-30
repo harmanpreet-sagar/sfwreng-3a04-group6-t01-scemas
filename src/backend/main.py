@@ -7,12 +7,16 @@ import asyncio
 import contextlib
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Load environment variables from .env file for local development
-# In production, these should be injected via container orchestration
+# Load environment variables: prefer src/.env when running from src/backend (local dev)
+_backend_dir = Path(__file__).resolve().parent
+_src_env = _backend_dir.parent / ".env"
+load_dotenv(_src_env)
 load_dotenv()
 
 
