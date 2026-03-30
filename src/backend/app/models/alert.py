@@ -42,3 +42,9 @@ class AlertResponse(AlertBase):
     acknowledged_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
 
+
+class AlertListResponse(BaseModel):
+    """Payload for operator dashboards: newest alerts first inside `alerts`."""
+
+    alerts: list[AlertResponse]
+    total: int
