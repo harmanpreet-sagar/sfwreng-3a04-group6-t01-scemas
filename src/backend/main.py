@@ -3,6 +3,8 @@ Main FastAPI application entry point for the Threshold Management System.
 This module initializes the API Facade layer that routes requests to subsystem services.
 """
 
+import asyncio
+import contextlib
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -16,11 +18,18 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Run one-time startup tasks (e.g. idempotent DB seeds)."""
+    """Run one-time startup tasks (e.g. idempotent DB seeds) and background jobs."""
     from app.shared.api_key_seed import seed_demo_public_api_key
+    from app.tasks.threshold_evaluator_worker import threshold_evaluator_worker
 
     seed_demo_public_api_key()
-    yield
+    evaluator_task = asyncio.create_task(threshold_evaluator_worker())
+    try:
+        yield
+    finally:
+        evaluator_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await evaluator_task
 
 
 # Initialize FastAPI application with OpenAPI documentation metadata

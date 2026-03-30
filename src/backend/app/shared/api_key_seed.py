@@ -19,6 +19,8 @@ import hashlib
 import logging
 import os
 
+from app.shared.db import get_supabase_db_url
+
 logger = logging.getLogger(__name__)
 
 # Fixed PoC default when DEMO_PUBLIC_API_KEY is not set (document in .env.example).
@@ -38,7 +40,7 @@ def _key_hash(plaintext: str) -> str:
 
 def seed_demo_public_api_key() -> None:
     """Insert one demo API key row if missing (same key_hash => no duplicate)."""
-    db_url = os.getenv("SUPABASE_DB_URL", "").strip()
+    db_url = get_supabase_db_url()
     if not db_url:
         logger.warning(
             "SUPABASE_DB_URL not set; skipping demo API key seed "
