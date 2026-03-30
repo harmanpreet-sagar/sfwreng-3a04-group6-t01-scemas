@@ -12,7 +12,8 @@ import math
 
 import psycopg.errors
 
-from app.models.alert import AlertCreate, AlertSeverity
+from app.shared.alert import AlertCreate
+from app.shared.enums import AlertSeverity
 from app.services import aggregated_data_repository, threshold_repository
 from app.services.alert_service import AlertService
 from app.shared.db import get_supabase_db_url

@@ -15,7 +15,7 @@ from typing import Any, Set
 
 from fastapi import Request
 
-from app.models.alert import AlertResponse
+from app.shared.alert import AlertResponse
 
 # Event type strings for dashboard routing
 ALERT_SSE_CREATED = "alert.created"
