@@ -6,7 +6,8 @@ from typing import Optional
 
 from psycopg.rows import dict_row
 
-from app.models.alert import AlertCreate, AlertResponse, AlertSeverity, AlertStatus
+from app.shared.alert import AlertCreate, AlertResponse
+from app.shared.enums import AlertSeverity, AlertStatus
 from app.shared.db import db_connection
 
 

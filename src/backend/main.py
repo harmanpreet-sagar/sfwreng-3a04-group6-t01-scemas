@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import alerts as alerts_router
 from app.routers import validation as validation_router
+from app.routers import thresholds as thresholds_router
 
 # Load environment variables: prefer src/.env when running from src/backend (local dev)
 _backend_dir = Path(__file__).resolve().parent
@@ -64,6 +65,7 @@ app.add_middleware(
 
 app.include_router(alerts_router.router)
 app.include_router(validation_router.router)
+app.include_router(thresholds_router.router)
 
 
 @app.get("/")

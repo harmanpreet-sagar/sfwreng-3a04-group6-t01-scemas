@@ -7,7 +7,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from app.models.alert import AlertListResponse, AlertResponse, AlertSeverity, AlertStatus
+from app.shared.alert import AlertListResponse, AlertResponse
+from app.shared.enums import AlertSeverity, AlertStatus
 from app.services.alert_service import AlertService
 from app.shared.alert_sse_broadcaster import alert_sse_broadcaster
 
