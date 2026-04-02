@@ -1,4 +1,15 @@
-"""Pydantic models for the Account Management subsystem (Jason)."""
+"""
+Pydantic models for the Account Management subsystem (Jason).
+
+Our class-diagram schema uses `id` and `role: UserRole`.
+Jason's DB schema uses `aid` and `clearance: str`.
+
+When Jason's accounts PR is merged his AccountResponse (aid/clearance) will
+replace the one below.  Until then these models serve as the API contract so
+nothing in the shared layer breaks.  Classes that Jason's router needs but
+that don't exist here yet (AccountListResponse, CredentialsUpdate,
+AuditLogEntry, AuditLogListResponse) will arrive with his PR.
+"""
 
 from __future__ import annotations
 
@@ -54,3 +65,4 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     account: AccountResponse
+
