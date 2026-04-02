@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import alerts as alerts_router
+from app.routers import validation as validation_router
 
 # Load environment variables: prefer src/.env when running from src/backend (local dev)
 _backend_dir = Path(__file__).resolve().parent
@@ -27,15 +28,20 @@ async def lifespan(app: FastAPI):
     """Run one-time startup tasks (e.g. idempotent DB seeds) and background jobs."""
     from app.shared.api_key_seed import seed_demo_public_api_key
     from app.tasks.threshold_evaluator_worker import threshold_evaluator_worker
+    from app.tasks.mqtt_subscriber import run_mqtt_subscriber
 
     seed_demo_public_api_key()
     evaluator_task = asyncio.create_task(threshold_evaluator_worker())
+    mqtt_task = asyncio.create_task(run_mqtt_subscriber())
     try:
         yield
     finally:
         evaluator_task.cancel()
+        mqtt_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await evaluator_task
+        with contextlib.suppress(asyncio.CancelledError):
+            await mqtt_task
 
 
 # Initialize FastAPI application with OpenAPI documentation metadata
@@ -57,6 +63,7 @@ app.add_middleware(
 )
 
 app.include_router(alerts_router.router)
+app.include_router(validation_router.router)
 
 
 @app.get("/")
