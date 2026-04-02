@@ -32,11 +32,7 @@ def login(body: LoginRequest) -> LoginResponse:
             status_code=401,
             detail="[POC] Login failed — email or password incorrect, or account inactive.",
         )
-    return LoginResponse(
-        message="Identity verified",
-        identity_verified=True,
-        account=result["account"],
-    )
+    return LoginResponse(message="Identity verified", identity_verified=True, account=result["account"])
  
  
 @router.post("/register", response_model=AccountResponse, status_code=201)
@@ -45,9 +41,7 @@ def register(
     actor: dict = Depends(require_admin),
 ) -> AccountResponse:
     """admin check is a stub"""
-    return AccountService.create_account(
-        data=body, actor_id=actor["aid"], actor_email=actor["email"]
-    )
+    return AccountService.create_account(data=body, actor_id=actor["aid"], actor_email=actor["email"])
  
  
 @router.get("", response_model=AccountListResponse)
@@ -85,10 +79,7 @@ def change_credentials(
     current: dict = Depends(get_current_account),
 ) -> AccountResponse:
     """identity check is a stub"""
-    account = AccountService.change_credentials(
-        aid=aid, new_password=body.new_password,
-        actor_id=current["aid"], actor_email=current["email"],
-    )
+    account = AccountService.change_credentials(aid=aid, new_password=body.new_password, actor_id=current["aid"], actor_email=current["email"],)
     if account is None:
         raise HTTPException(status_code=404, detail={"error": "account_not_found", "message": _NOT_FOUND, "aid": aid})
     return account
@@ -97,9 +88,7 @@ def change_credentials(
 @router.patch("/{aid}/deactivate", response_model=AccountResponse)
 def deactivate_account(aid: int, actor: dict = Depends(require_admin)) -> AccountResponse:
     """deactivating account, admin check is a stub"""
-    account = AccountService.deactivate_account(
-        aid=aid, actor_id=actor["aid"], actor_email=actor["email"]
-    )
+    account = AccountService.deactivate_account(aid=aid, actor_id=actor["aid"], actor_email=actor["email"])
     if account is None:
         raise HTTPException(status_code=404, detail={"error": "account_not_found", "message": _NOT_FOUND, "aid": aid})
     return account
