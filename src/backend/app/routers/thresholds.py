@@ -9,6 +9,11 @@ RBAC:
   PATCH /threshold/{id}/activate   — ADMIN only
   PATCH /threshold/{id}/deactivate — ADMIN only
   DELETE /threshold/{id}   — ADMIN only
+
+Route ordering note: /activate and /deactivate are declared before
+/{threshold_id} so FastAPI matches the literal path segments first.
+If the wildcard route were declared first, GET /threshold/activate
+would be consumed by it and treated as threshold_id="activate".
 """
 
 from __future__ import annotations
@@ -26,6 +31,8 @@ _NOT_FOUND_DETAIL = "No threshold with this id"
 
 
 def _not_found(threshold_id: int) -> HTTPException:
+    # Extracted so every 404 in this router has the same shape, making it
+    # easier for callers to pattern-match on `error` without checking message text.
     return HTTPException(
         status_code=404,
         detail={
@@ -102,6 +109,10 @@ def deactivate_threshold(
     return updated
 
 
+# response_class=Response is required when status_code=204: FastAPI 0.115+
+# validates that a 204 response has no body, which conflicts with its default
+# JSONResponse wrapper.  Returning Response(status_code=204) explicitly
+# satisfies that contract while still triggering the 404 branch above.
 @router.delete("/{threshold_id}", status_code=204, response_class=Response)
 def delete_threshold(
     threshold_id: int,

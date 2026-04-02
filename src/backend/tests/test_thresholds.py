@@ -3,6 +3,11 @@ Threshold Management endpoint tests.
 
 All repository calls are mocked — no real DB required.
 Run from src/backend/:  pytest tests/test_thresholds.py -v
+
+Patching strategy: we patch at the repository layer (not the service layer)
+so each test exercises the full router → service → repository call chain.
+Only the actual SQL execution is bypassed, which means RBAC decisions, audit
+event emission, and None-handling in the service are all covered by the suite.
 """
 
 from __future__ import annotations
@@ -23,7 +28,11 @@ _NOW = datetime(2026, 3, 27, 12, 0, 0, tzinfo=timezone.utc)
 
 
 def _make_threshold(id: int = 1, **overrides) -> ThresholdResponse:
-    """Return a ThresholdResponse with sensible defaults."""
+    """Return a ThresholdResponse with sensible defaults.
+
+    **overrides lets individual tests swap out only the fields they care about
+    without repeating the full payload every time.
+    """
     data = {
         "id": id,
         "zone": "zone-1",
@@ -194,6 +203,8 @@ class TestCreateThreshold:
         assert body["metric"] == "pm25"
 
     def test_create_invalid_condition_returns_422(self, client, admin_token):
+        # Pydantic rejects unknown enum values before the handler is called,
+        # so no repository patch is needed here.
         bad = {**self._payload, "condition": "INVALID"}
         r = client.post("/threshold", json=bad, headers=_auth(admin_token))
         assert r.status_code == 422
@@ -280,6 +291,8 @@ class TestDeleteThreshold:
         ):
             r = client.delete("/threshold/1", headers=_auth(admin_token))
         assert r.status_code == 204
+        # 204 No Content must have an empty body — asserting this ensures the
+        # response_class=Response fix on the DELETE route is in place.
         assert r.content == b""
 
     def test_delete_nonexistent_returns_404(self, client, admin_token):

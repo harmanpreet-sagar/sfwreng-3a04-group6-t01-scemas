@@ -1,8 +1,14 @@
 """
 Threshold lifecycle helpers with audit logging.
 
-All mutating operations accept actor_email so every audit record captures who
-made the change. The router extracts this from the JWT via require_admin.
+Responsibilities of this layer:
+  - Orchestrate repository calls
+  - Emit audit events for every mutation
+  - Return None for not-found cases so the router decides the HTTP status
+
+actor_email is passed in as a parameter (rather than fetched from the JWT
+inside this layer) to keep the service decoupled from HTTP concerns — it can
+be called from background tasks or tests without a live request context.
 """
 
 from __future__ import annotations
@@ -20,6 +26,8 @@ class ThresholdService:
         payload: ThresholdCreate, actor_email: str
     ) -> ThresholdResponse:
         created = threshold_repository.insert_threshold(payload)
+        # Audit is logged after a successful DB write — if the insert fails,
+        # no audit record is emitted, which correctly reflects nothing happened.
         log_audit_event(
             "threshold.created",
             details={
@@ -49,6 +57,8 @@ class ThresholdService:
         updated = threshold_repository.update_threshold(threshold_id, changes)
         if updated is None:
             return None
+        # Log the diff rather than the full row so the audit trail shows
+        # exactly which fields were changed without storing redundant data.
         log_audit_event(
             "threshold.updated",
             details={
@@ -88,6 +98,8 @@ class ThresholdService:
     @staticmethod
     def delete_threshold(threshold_id: int, actor_email: str) -> bool:
         deleted = threshold_repository.delete_threshold(threshold_id)
+        # Only audit if the row actually existed — prevents ghost audit entries
+        # if the router somehow calls delete twice on the same id.
         if deleted:
             log_audit_event(
                 "threshold.deleted",

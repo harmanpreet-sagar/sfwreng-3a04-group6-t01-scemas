@@ -23,6 +23,8 @@ from jose import JWTError, jwt
 
 from app.shared.enums import UserRole
 
+# auto_error=False lets us return a structured JSON error on missing tokens
+# instead of FastAPI's default plain-text "Not authenticated" response.
 _bearer = HTTPBearer(auto_error=False)
 _ALGORITHM = "HS256"
 
@@ -54,6 +56,9 @@ class CurrentUser:
         self.role = role
 
 
+# _extract_user is intentionally private — it only provides a raw CurrentUser
+# with no role check.  Route handlers should always depend on require_admin or
+# require_operator_or_admin so the RBAC gate is never accidentally bypassed.
 def _extract_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
 ) -> CurrentUser:
@@ -68,6 +73,7 @@ def _extract_user(
         )
     payload = _decode_token(credentials.credentials)
     try:
+        # RFC 7519 requires `sub` to be a string, so explicit int conversion is needed.
         return CurrentUser(
             account_id=int(payload["sub"]),
             email=str(payload["email"]),
@@ -115,6 +121,9 @@ def require_operator_or_admin(user: CurrentUser = Depends(_extract_user)) -> Cur
 def create_access_token(account_id: int, email: str, role: UserRole) -> str:
     """
     Sign and return a JWT. Called by Jason's POST /account/login endpoint.
+
+    Note: tokens have no expiry (`exp` claim) for this PoC sprint.
+    Add exp + refresh-token logic before production deployment.
 
     Example:
         token = create_access_token(account.id, account.email, account.role)
