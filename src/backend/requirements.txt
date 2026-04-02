@@ -25,3 +25,5 @@ passlib[bcrypt]==1.7.4                # Password hashing with bcrypt algorithm
 
 # File Upload Support
 python-multipart==0.0.12              # Multipart form data parsing for file uploads
+
+asyncpg==0.30.0
