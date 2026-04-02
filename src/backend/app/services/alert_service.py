@@ -11,7 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from app.models.alert import AlertCreate, AlertResponse, AlertSeverity, AlertStatus
+from app.shared.alert import AlertCreate, AlertResponse
+from app.shared.enums import AlertSeverity, AlertStatus
 from app.shared.alert_sse_broadcaster import (
     ALERT_SSE_ACKNOWLEDGED,
     ALERT_SSE_CREATED,

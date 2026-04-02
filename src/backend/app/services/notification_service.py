@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import os
 
-from app.models.alert import AlertResponse
+from app.shared.alert import AlertResponse
 
 logger = logging.getLogger(__name__)
 

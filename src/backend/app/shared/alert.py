@@ -1,23 +1,13 @@
+"""Pydantic models for the Alerts subsystem (Aakash)."""
+
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
-class AlertStatus(str, Enum):
-    active = "active"
-    acknowledged = "acknowledged"
-    resolved = "resolved"
-
-
-class AlertSeverity(str, Enum):
-    low = "low"
-    medium = "medium"
-    high = "high"
-    critical = "critical"
+from app.shared.enums import AlertSeverity, AlertStatus
 
 
 class AlertBase(BaseModel):
@@ -26,6 +16,7 @@ class AlertBase(BaseModel):
     severity: AlertSeverity
     message: str = Field(..., min_length=1)
     status: AlertStatus = AlertStatus.active
+    source_type: Optional[str] = None
     observed_value: Optional[float] = None
     threshold_value: Optional[float] = None
     threshold_id: Optional[int] = None
@@ -42,9 +33,10 @@ class AlertResponse(AlertBase):
     acknowledged_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
 
+    class Config:
+        from_attributes = True
+
 
 class AlertListResponse(BaseModel):
-    """Payload for operator dashboards: newest alerts first inside `alerts`."""
-
     alerts: list[AlertResponse]
     total: int
