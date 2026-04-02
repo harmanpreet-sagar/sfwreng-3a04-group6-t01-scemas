@@ -17,6 +17,7 @@ from app.shared.public_api_audit_middleware import PublicApiAuditMiddleware
 from app.routers import alerts as alerts_router
 from app.routers import public_demo as public_demo_router
 from app.routers import public_zones as public_zones_router
+from app.routers import thresholds as thresholds_router
 
 # Load environment variables: prefer src/.env when running from src/backend (local dev)
 _backend_dir = Path(__file__).resolve().parent
@@ -61,6 +62,7 @@ app.add_middleware(
 app.add_middleware(PublicApiAuditMiddleware)
 
 app.include_router(alerts_router.router)
+app.include_router(thresholds_router.router)
 app.include_router(public_demo_router.router)
 app.include_router(public_zones_router.router)
 
