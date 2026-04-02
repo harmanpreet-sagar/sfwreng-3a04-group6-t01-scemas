@@ -110,6 +110,69 @@ def list_alerts(
     return [AlertResponse.model_validate(dict(r)) for r in rows]
 
 
+_SEVERITY_RANK: dict[str, int] = {
+    AlertSeverity.low.value: 1,
+    AlertSeverity.medium.value: 2,
+    AlertSeverity.high.value: 3,
+    AlertSeverity.critical.value: 4,
+}
+
+
+def fetch_worst_active_severity_per_zone() -> dict[str, str]:
+    """
+    For each zone with at least one active alert, return the highest severity
+    (critical > high > medium > low). For public dashboards only — no messages.
+    """
+    with db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT zone, severity
+                FROM public.alerts
+                WHERE status = %s
+                """,
+                (AlertStatus.active.value,),
+            )
+            rows = cur.fetchall()
+
+    worst_rank: dict[str, int] = {}
+    for zone, severity in rows:
+        if zone is None:
+            continue
+        sev = str(severity)
+        rank = _SEVERITY_RANK.get(sev, 0)
+        if rank > worst_rank.get(zone, 0):
+            worst_rank[zone] = rank
+
+    rank_to_severity = {v: k for k, v in _SEVERITY_RANK.items()}
+    return {z: rank_to_severity[r] for z, r in worst_rank.items()}
+
+
+def fetch_worst_active_severity_for_zone(zone: str) -> Optional[str]:
+    """Highest active alert severity in this zone, or None if no active alerts."""
+    with db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT severity
+                FROM public.alerts
+                WHERE status = %s AND zone = %s
+                """,
+                (AlertStatus.active.value, zone),
+            )
+            rows = cur.fetchall()
+
+    worst_rank = 0
+    worst_sev: Optional[str] = None
+    for (severity,) in rows:
+        sev = str(severity)
+        rank = _SEVERITY_RANK.get(sev, 0)
+        if rank > worst_rank:
+            worst_rank = rank
+            worst_sev = sev
+    return worst_sev
+
+
 def get_alert_by_id(alert_id: int) -> Optional[AlertResponse]:
     """Return one alert by primary key, or None if missing."""
     with db_connection() as conn:

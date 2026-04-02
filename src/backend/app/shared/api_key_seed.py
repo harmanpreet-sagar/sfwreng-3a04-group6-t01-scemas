@@ -15,10 +15,10 @@ the app still starts.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import os
 
+from app.shared.api_key_hash import api_key_sha256_hex
 from app.shared.db import get_supabase_db_url
 
 logger = logging.getLogger(__name__)
@@ -32,10 +32,6 @@ DEMO_KEY_LABEL = "SCEMAS Demo Public API"
 def _demo_key_plaintext() -> str:
     raw = os.getenv("DEMO_PUBLIC_API_KEY", "").strip()
     return raw if raw else DEFAULT_DEMO_PUBLIC_API_KEY
-
-
-def _key_hash(plaintext: str) -> str:
-    return hashlib.sha256(plaintext.encode("utf-8")).hexdigest()
 
 
 def seed_demo_public_api_key() -> None:
@@ -55,7 +51,7 @@ def seed_demo_public_api_key() -> None:
         return
 
     plaintext = _demo_key_plaintext()
-    digest = _key_hash(plaintext)
+    digest = api_key_sha256_hex(plaintext)
 
     try:
         with psycopg.connect(db_url) as conn:
