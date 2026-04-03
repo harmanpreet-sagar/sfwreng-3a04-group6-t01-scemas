@@ -12,10 +12,27 @@ test suite can run without a real database or MQTT broker.
 
 import asyncio
 import os
+import sys
+from unittest.mock import MagicMock
 
 # Must come before any `from main import ...` or `from app import ...` call.
 os.environ.setdefault("JWT_SECRET", "test-secret-for-pytest-do-not-use-in-prod")
 os.environ.setdefault("SUPABASE_DB_URL", "postgresql://fake:fake@localhost:5432/fake")
+
+# Some modules only exist on certain branches.  Pre-injecting a MagicMock into
+# sys.modules means patch() always has a target regardless of which branch CI
+# is running.  When the real file IS present on this branch, __import__ succeeds
+# and the real module is used instead.
+_OPTIONAL_MODULES = [
+    "app.shared.threshold_seed",   # harman branch — default threshold seeding
+    "app.shared.seed_accounts",    # jason branch  — demo account seeding
+    "app.tasks.mqtt_subscriber",   # ali branch    — MQTT background worker
+]
+for _mod in _OPTIONAL_MODULES:
+    try:
+        __import__(_mod)
+    except ImportError:
+        sys.modules[_mod] = MagicMock()
 
 import pytest
 from unittest.mock import patch
@@ -34,24 +51,28 @@ async def _noop_worker() -> None:
     await asyncio.sleep(9999)
 
 
-@pytest.fixture(scope="session")
-def app():
-    """
-    Build a single FastAPI application instance shared across the whole test run.
+@pytest.fixture(scope="session", autouse=True)
+def _patch_startup_functions():
+    """Hold all startup-side-effect patches open for the entire test session.
 
-    scope="session" avoids re-importing and re-wiring the app for every test
-    class, which significantly speeds up the suite.
+    The patches must outlive the `app` fixture because FastAPI's lifespan
+    (where seeds and workers are actually called) only runs when TestClient
+    enters its context manager — which happens in the `client` fixture, after
+    `app` has already returned.  A plain `with patch(...)` inside `app` would
+    exit before the lifespan ever fires.
 
-    All four startup side-effects are patched before the import so no real
-    I/O occurs:
-      seed_demo_public_api_key  — would hit the DB on startup
-      seed_default_thresholds   — would hit the DB on startup
+    Patched side-effects:
+      seed_demo_public_api_key   — would hit the DB
+      seed_default_thresholds    — would hit the DB (harman branch)
+      seed_demo_accounts         — would hit the DB (jason branch)
       threshold_evaluator_worker — long-running polling loop
-      run_mqtt_subscriber        — opens a TLS connection to Mosquitto
+      run_mqtt_subscriber        — opens a TLS connection to Mosquitto (ali branch)
+>>>>>>> main
     """
     with (
         patch("app.shared.api_key_seed.seed_demo_public_api_key"),
         patch("app.shared.threshold_seed.seed_default_thresholds"),
+        patch("app.shared.seed_accounts.seed_demo_accounts"),
         patch(
             "app.tasks.threshold_evaluator_worker.threshold_evaluator_worker",
             _noop_worker,
@@ -61,8 +82,17 @@ def app():
             _noop_worker,
         ),
     ):
-        from main import app as fastapi_app  # noqa: PLC0415
-        return fastapi_app
+        yield  # patches stay active until the very end of the test session
+
+
+@pytest.fixture(scope="session")
+def app(_patch_startup_functions):
+    # scope="session" — one FastAPI app instance is shared across the entire
+    # test session, which avoids the overhead of re-importing and re-wiring
+    # startup hooks for every test class.
+    from main import app as fastapi_app  # noqa: PLC0415
+
+    return fastapi_app
 
 
 @pytest.fixture(scope="session")

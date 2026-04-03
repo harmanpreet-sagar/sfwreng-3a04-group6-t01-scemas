@@ -18,6 +18,7 @@ twilio==9.3.2                         # Twilio client for sending SMS alerts
 # Data Validation and Serialization
 pydantic==2.9.2                       # Data validation using Python type hints
 pydantic-settings==2.6.0              # Settings management with Pydantic
+pydantic[email]
 
 # Authentication and Security
 python-jose[cryptography]==3.3.0      # JWT token creation and verification

@@ -32,9 +32,21 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+<<<<<<< HEAD
 # .env must be loaded before any app module reads os.getenv() at import time.
 # We try src/.env first (used when running from src/backend/ locally) then
 # fall back to whatever load_dotenv() finds in the current working directory.
+=======
+from app.shared.public_api_audit_middleware import PublicApiAuditMiddleware
+from app.routers import alerts as alerts_router
+from app.routers import accounts as accounts_router
+from app.routers import validation as validation_router
+from app.routers import public_demo as public_demo_router
+from app.routers import public_zones as public_zones_router
+from app.routers import thresholds as thresholds_router
+
+# Load environment variables: prefer src/.env when running from src/backend (local dev)
+>>>>>>> main
 _backend_dir = Path(__file__).resolve().parent
 load_dotenv(_backend_dir.parent / ".env")
 load_dotenv()
@@ -59,13 +71,18 @@ async def lifespan(app: FastAPI):
     from app.shared.api_key_seed import seed_demo_public_api_key
     from app.shared.threshold_seed import seed_default_thresholds
     from app.tasks.threshold_evaluator_worker import threshold_evaluator_worker
+    from app.shared.seed_accounts import seed_demo_accounts
     from app.tasks.mqtt_subscriber import run_mqtt_subscriber
 
     # Idempotent seeds — safe to run on every restart; they check for existing
     # data before inserting so they never overwrite operator-configured state.
     seed_demo_public_api_key()
+<<<<<<< HEAD
     seed_default_thresholds()
 
+=======
+    seed_demo_accounts()
+>>>>>>> main
     evaluator_task = asyncio.create_task(threshold_evaluator_worker())
     mqtt_task      = asyncio.create_task(run_mqtt_subscriber())
 
@@ -147,6 +164,11 @@ from app.routers import public_demo  as public_demo_router
 from app.routers import public_zones as public_zones_router
 
 app.include_router(alerts_router.router)
+<<<<<<< HEAD
+=======
+app.include_router(accounts_router.router)
+app.include_router(validation_router.router)
+>>>>>>> main
 app.include_router(thresholds_router.router)
 app.include_router(validation_router.router)
 app.include_router(public_demo_router.router)
