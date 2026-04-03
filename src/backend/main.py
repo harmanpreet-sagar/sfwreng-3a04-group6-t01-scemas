@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.shared.public_api_audit_middleware import PublicApiAuditMiddleware
 from app.routers import alerts as alerts_router
+from app.routers import accounts as accounts_router
 from app.routers import validation as validation_router
 from app.routers import public_demo as public_demo_router
 from app.routers import public_zones as public_zones_router
@@ -36,9 +37,11 @@ async def lifespan(app: FastAPI):
     """Run one-time startup tasks (e.g. idempotent DB seeds) and background jobs."""
     from app.shared.api_key_seed import seed_demo_public_api_key
     from app.tasks.threshold_evaluator_worker import threshold_evaluator_worker
+    from app.shared.seed_accounts import seed_demo_accounts
     from app.tasks.mqtt_subscriber import run_mqtt_subscriber
 
     seed_demo_public_api_key()
+    seed_demo_accounts()
     evaluator_task = asyncio.create_task(threshold_evaluator_worker())
     mqtt_task = asyncio.create_task(run_mqtt_subscriber())
     try:
@@ -72,6 +75,7 @@ app.add_middleware(
 app.add_middleware(PublicApiAuditMiddleware)
 
 app.include_router(alerts_router.router)
+app.include_router(accounts_router.router)
 app.include_router(validation_router.router)
 app.include_router(thresholds_router.router)
 app.include_router(public_demo_router.router)

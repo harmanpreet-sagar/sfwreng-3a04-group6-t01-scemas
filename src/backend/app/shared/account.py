@@ -1,56 +1,68 @@
-"""Pydantic models for the Account Management subsystem (Jason)."""
+"""Pydantic models for the Account Management subsystem"""
 
 from __future__ import annotations
-
+ 
 from datetime import datetime
-from typing import Optional
-
+from typing import List, Optional
+ 
 from pydantic import BaseModel, EmailStr, Field
-
-from app.shared.enums import UserRole
-
-
-class AccountBase(BaseModel):
-    name: str = Field(..., min_length=1)
-    email: EmailStr
-    role: UserRole
-    age: Optional[int] = None
-    address: Optional[str] = None
-    is_active: bool = True
-
-
-class AccountCreate(AccountBase):
-    password: str = Field(..., min_length=8)
-
-
-class AccountUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    role: Optional[UserRole] = None
-    age: Optional[int] = None
-    address: Optional[str] = None
-
-
-class AccountPasswordUpdate(BaseModel):
-    current_password: str
-    new_password: str = Field(..., min_length=8)
-
-
-class AccountResponse(AccountBase):
-    id: int
+ 
+ 
+class AccountResponse(BaseModel):
+    aid: int
+    name: str
+    email: str
+    clearance: str
+    is_active: bool
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+class AccountListResponse(BaseModel):
+    accounts: List[AccountResponse]
+    total: int
+ 
+ 
+class AccountCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=128)
+    email: EmailStr
+    password: str = Field(..., min_length=1, max_length=128)
+    clearance: str = Field(..., pattern="^(admin|operator)$")
+ 
+ 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-
-
+ 
+ 
 class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+    """
+    POC login response, verified by stub
+    """
+    message: str
+    identity_verified: bool
     account: AccountResponse
+ 
+ 
+class CredentialsUpdate(BaseModel):
+    new_password: str = Field(..., min_length=1, max_length=128)
+ 
+ 
+class AuditLogEntry(BaseModel):
+    id: int
+    event_type: str
+    actor_id: Optional[int]
+    actor_email: Optional[str]
+    target_id: Optional[int]
+    target_email: Optional[str]
+    detail: Optional[str]
+    created_at: datetime
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+class AuditLogListResponse(BaseModel):
+    entries: List[AuditLogEntry]
+    total: int
