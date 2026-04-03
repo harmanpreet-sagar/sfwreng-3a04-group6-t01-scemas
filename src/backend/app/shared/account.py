@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 Pydantic models for the Account Management subsystem (Jason).
 
@@ -11,9 +10,6 @@ nothing in the shared layer breaks.  Classes that Jason's router needs but
 that don't exist here yet (AccountListResponse, CredentialsUpdate,
 AuditLogEntry, AuditLogListResponse) will arrive with his PR.
 """
-=======
-"""Pydantic models for the Account Management subsystem"""
->>>>>>> main
 
 from __future__ import annotations
  
@@ -59,15 +55,11 @@ class LoginResponse(BaseModel):
     message: str
     identity_verified: bool
     account: AccountResponse
-<<<<<<< HEAD
 
-=======
- 
- 
 class CredentialsUpdate(BaseModel):
     new_password: str = Field(..., min_length=1, max_length=128)
- 
- 
+
+
 class AuditLogEntry(BaseModel):
     id: int
     event_type: str
@@ -77,11 +69,11 @@ class AuditLogEntry(BaseModel):
     target_email: Optional[str]
     detail: Optional[str]
     created_at: datetime
- 
+
     model_config = {"from_attributes": True}
- 
- 
+
+
 class AuditLogListResponse(BaseModel):
     entries: List[AuditLogEntry]
     total: int
->>>>>>> main
+

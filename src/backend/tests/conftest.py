@@ -67,7 +67,6 @@ def _patch_startup_functions():
       seed_demo_accounts         — would hit the DB (jason branch)
       threshold_evaluator_worker — long-running polling loop
       run_mqtt_subscriber        — opens a TLS connection to Mosquitto (ali branch)
->>>>>>> main
     """
     with (
         patch("app.shared.api_key_seed.seed_demo_public_api_key"),
