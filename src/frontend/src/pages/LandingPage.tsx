@@ -1,6 +1,5 @@
 /**
- * Public marketing / citizen-facing entry for SCEMAS — no operator login required.
- * Optional live zone status when VITE_PUBLIC_DEMO_API_KEY matches the backend demo key.
+ * Public marketing entry for SCEMAS: editorial layout, warm palette, live map when API key is set.
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -23,7 +22,31 @@ const PUBLIC_ENDPOINTS = [
   {
     method: 'GET',
     path: '/public/zones/{zone}',
-    summary: 'Same summary for a single zone — useful for signage or kiosks.',
+    summary: 'Same summary for a single zone, useful for signage or kiosks.',
+  },
+] as const;
+
+const PILLARS = [
+  {
+    title: 'Validated telemetry',
+    body: 'MQTT ingest with range checks before anything hits your dashboards or public feeds.',
+    icon: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    ),
+  },
+  {
+    title: 'Zone intelligence',
+    body: 'City zones roll up to averages and peaks operators can act on, not raw sensor noise.',
+    icon: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+    ),
+  },
+  {
+    title: 'Thresholds & alerts',
+    body: 'Rules you define drive operational alerts; staff sign in to acknowledge and resolve.',
+    icon: (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0" />
+    ),
   },
 ] as const;
 
@@ -49,144 +72,232 @@ export default function LandingPage() {
     };
   }, []);
 
-  const liveLabel = !isPublicApiConfigured()
-    ? 'Configure VITE_PUBLIC_DEMO_API_KEY (same value as DEMO_PUBLIC_API_KEY) for live status colours.'
+  const liveLabel: string | null = !isPublicApiConfigured()
+    ? null
     : !liveAttempted
       ? 'Loading public summaries…'
       : publicZones && publicZones.length > 0
         ? 'Live data from the public API.'
-        : 'Public API unreachable — showing monitoring coverage only.';
+        : 'Public API unreachable; coverage map only.';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-brand-50/30 text-slate-900">
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-teal-600 shadow-md ring-1 ring-black/5">
-              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+    <div className="min-h-screen bg-parchment bg-noise-soft text-ink-900">
+      <header className="sticky top-0 z-50 border-b border-ink-900/10 bg-parchment/85 backdrop-blur-lg">
+        <div className="mx-auto flex h-[4.25rem] max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <Link to="/" className="flex items-center gap-3 min-w-0 group">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ink-950 text-honey-400 shadow-lg shadow-ink-950/20 ring-2 ring-honey-500/30 transition group-hover:ring-honey-400/50">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4M5.6 18.4l1.4-1.4m10-10L18.4 5.6" />
               </svg>
             </div>
-            <span className="truncate font-bold tracking-tight text-slate-900">SCEMAS</span>
-          </div>
-          <nav className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="min-w-0">
+              <span className="font-display text-lg font-bold tracking-tight text-ink-950 block leading-none">SCEMAS</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-moss-600">McMaster · Group 6</span>
+            </div>
+          </Link>
+          <nav className="flex items-center gap-1 sm:gap-2 shrink-0">
             <a
               href={DOCS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 sm:inline-block"
+              className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink-600 transition hover:bg-ink-900/5 sm:inline-block"
             >
-              API docs
+              API reference
             </a>
             <a
               href="#public-api"
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+              className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-600 transition hover:bg-ink-900/5"
             >
-              Public API
+              Developers
             </a>
             <Link
               to="/login"
-              className="rounded-lg bg-gradient-to-br from-brand-600 to-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-brand-500 hover:to-teal-600"
+              className="rounded-xl bg-ink-950 px-4 py-2.5 text-sm font-bold text-parchment shadow-md transition hover:bg-moss-800 hover:text-white"
             >
-              Operator login
+              Operator sign-in
             </Link>
           </nav>
         </div>
       </header>
 
       <main>
-        <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-          <p className="text-sm font-bold uppercase tracking-widest text-brand-700">Smart Campus Environmental Monitoring</p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            City-wide environmental awareness — built for operators, open to the public.
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-slate-600">
-            SCEMAS ingests sensor telemetry, validates it, and publishes zone-level summaries. Residents and partners see
-            the big picture; authorized staff sign in to manage thresholds and respond to alerts.
-          </p>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-          <div className="grid gap-8 lg:grid-cols-5 lg:items-start">
-            <div className="lg:col-span-3">
-              <h2 className="text-lg font-bold text-slate-900">Monitoring coverage</h2>
-              <p className="mt-1 text-sm text-slate-500">{liveLabel}</p>
-              <div className="mt-4 overflow-hidden border border-slate-200/80 bg-white shadow-card ring-1 ring-slate-900/[0.04]">
-                <PublicLandingMap zones={publicZones} />
-              </div>
-              <p className="mt-3 text-xs text-slate-500">
-                Map centred on Hamilton / McMaster. Teal markers = normal summary; amber/red = active public alert hint.
-                Grey = coverage only (no live feed).
-              </p>
-            </div>
-            <aside className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-card lg:col-span-2">
-              <h3 className="font-bold text-slate-900">At a glance</h3>
-              <ul className="mt-4 space-y-3 text-sm text-slate-600">
-                <li className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
-                  Four campus zones with aggregated air quality, temperature, humidity, and noise-style metrics.
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
-                  Thresholds and alerts are managed by operators after secure login.
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
-                  Third parties can pull read-only zone JSON with an API key (rate limited).
-                </li>
-              </ul>
+        {/* Hero */}
+        <section className="relative overflow-hidden border-b border-ink-900/10 bg-ink-950 text-parchment">
+          <div className="pointer-events-none absolute inset-0 bg-noise-soft opacity-[0.07] mix-blend-overlay" aria-hidden />
+          <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-28">
+            <p className="eyebrow text-honey-400">Environmental monitoring</p>
+            <h1 className="font-display mt-4 max-w-3xl text-[2.35rem] font-bold leading-[1.08] tracking-tight text-parchment sm:text-5xl lg:text-[3.25rem]">
+              Air, noise, and climate signals made legible for cities.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-ink-200 leading-relaxed">
+              SCEMAS ingests sensor streams, validates what is real, and publishes zone-level summaries. Residents see the
+              story; operators get thresholds, alerts, and audit trails.
+            </p>
+            <div className="mt-10 flex flex-wrap gap-3">
               <Link
                 to="/login"
-                className="mt-6 flex w-full items-center justify-center rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-xl bg-honey-500 px-6 py-3.5 text-sm font-bold text-ink-950 shadow-lg shadow-black/25 transition hover:bg-honey-400"
               >
-                Go to operator console
+                Open Dashboard
               </Link>
-            </aside>
-          </div>
-        </section>
-
-        <section id="public-api" className="border-t border-slate-200/80 bg-slate-50/80 py-16">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="text-2xl font-bold text-slate-900">Public API</h2>
-            <p className="mt-2 max-w-3xl text-slate-600">
-              Read-only REST endpoints for signage, research, and integrations. Authenticate with{' '}
-              <code className="rounded bg-slate-200/60 px-1.5 py-0.5 text-xs font-mono text-slate-800">Authorization: Bearer &lt;api_key&gt;</code>
-              . Responses are rate limited per key.
-            </p>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {PUBLIC_ENDPOINTS.map(ep => (
-                <div
-                  key={ep.path}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-slate-900/[0.03]"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-900">{ep.method}</span>
-                    <code className="text-sm font-mono font-semibold text-slate-800">{ep.path}</code>
-                  </div>
-                  <p className="mt-3 text-sm text-slate-600 leading-relaxed">{ep.summary}</p>
+              <a
+                href="#map"
+                className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10"
+              >
+                View coverage map
+              </a>
+            </div>
+            <div className="mt-14 grid grid-cols-3 gap-6 border-t border-white/10 pt-10 sm:max-w-lg">
+              {[
+                { n: '4', l: 'Zones' },
+                { n: '4', l: 'Metrics' },
+                { n: '1', l: 'Public API' },
+              ].map(s => (
+                <div key={s.l}>
+                  <p className="font-display text-3xl font-bold text-white sm:text-4xl">{s.n}</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-ink-400">{s.l}</p>
                 </div>
               ))}
             </div>
+          </div>
+        </section>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+        {/* Pillars */}
+        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          <div className="max-w-2xl">
+            <p className="section-title">How it fits together</p>
+            <h2 className="font-display mt-2 text-3xl font-bold tracking-tight text-ink-950 sm:text-4xl">
+              From raw readings to decisions
+            </h2>
+          </div>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {PILLARS.map(p => (
+              <div
+                key={p.title}
+                className="group relative overflow-hidden rounded-2xl border border-ink-200/80 bg-white p-6 shadow-card transition duration-300 hover:border-moss-300/60 hover:shadow-lift"
+              >
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-moss-50 text-moss-700 ring-1 ring-moss-200/80 transition group-hover:bg-moss-100">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {p.icon}
+                  </svg>
+                </div>
+                <h3 className="font-display text-lg font-bold text-ink-950">{p.title}</h3>
+                <p className="mt-2 text-sm text-ink-600 leading-relaxed">{p.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Map + aside */}
+        <section id="map" className="border-y border-ink-200/60 bg-parchment-deep/80 py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="grid gap-10 lg:grid-cols-5 lg:items-start">
+              <div className="lg:col-span-3">
+                <p className="section-title">Live layer</p>
+                <h2 className="font-display mt-2 text-2xl font-bold text-ink-950 sm:text-3xl">Monitoring coverage</h2>
+                {liveLabel != null ? (
+                  <p className="mt-2 text-sm text-ink-600 max-w-prose">{liveLabel}</p>
+                ) : null}
+                <div className="mt-5 overflow-hidden rounded-2xl border border-ink-200/90 bg-white shadow-card-lg ring-1 ring-ink-900/[0.04]">
+                  <PublicLandingMap zones={publicZones} />
+                </div>
+                <p className="mt-3 text-xs text-ink-500 leading-relaxed max-w-prose">
+                  Hamilton / McMaster centroid. Teal markers reflect healthy summaries; amber and red hint at public-facing
+                  alert severity when the API is wired.
+                </p>
+              </div>
+              <aside className="lg:col-span-2">
+                <div className="sticky top-24 rounded-2xl border border-ink-200/80 bg-ink-950 p-8 text-parchment shadow-xl">
+                  <p className="text-honey-400 text-xs font-bold uppercase tracking-[0.2em]">Operators</p>
+                  <h3 className="font-display mt-3 text-2xl font-bold leading-snug">Threshold rules & alert desk</h3>
+                  <ul className="mt-6 space-y-4 text-sm text-ink-200">
+                    <li className="flex gap-3">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-honey-400" />
+                      Role-based access: admins edit rules; operators monitor and resolve.
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-moss-400" />
+                      Charts and map stay in sync with the same threshold catalogue.
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
+                      SSE pushes new violations to the dashboard in near real time.
+                    </li>
+                  </ul>
+                  <Link
+                    to="/login"
+                    className="mt-8 flex w-full items-center justify-center rounded-xl border border-white/20 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+                  >
+                    Sign in to Dashboard →
+                  </Link>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        {/* Public API */}
+        <section id="public-api" className="py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="section-title">Integrations</p>
+                <h2 className="font-display mt-2 text-3xl font-bold text-ink-950 sm:text-4xl">Public API</h2>
+                <p className="mt-3 text-ink-600 leading-relaxed">
+                  Read-only JSON for signage, research, and partner apps. Authenticate with{' '}
+                  <code className="rounded-lg bg-parchment-muted px-2 py-0.5 text-xs font-mono text-ink-800">
+                    Authorization: Bearer &lt;api_key&gt;
+                  </code>
+                  . Rate limits apply per key.
+                </p>
+              </div>
               <a
                 href={DOCS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                className="inline-flex shrink-0 items-center justify-center rounded-xl bg-moss-600 px-6 py-3.5 text-sm font-bold text-white shadow-md hover:bg-moss-500"
               >
-                Open full Swagger UI
+                Browse OpenAPI docs
               </a>
-              <span className="self-center text-sm text-slate-500">Includes operator routes (JWT) and all subsystems.</span>
+            </div>
+
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              {PUBLIC_ENDPOINTS.map(ep => (
+                <div
+                  key={ep.path}
+                  className="rounded-2xl border border-ink-200/80 bg-white p-6 shadow-card transition hover:border-moss-200"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-lg bg-moss-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-moss-800">
+                      {ep.method}
+                    </span>
+                    <code className="text-sm font-mono font-semibold text-ink-900">{ep.path}</code>
+                  </div>
+                  <p className="mt-4 text-sm text-ink-600 leading-relaxed">{ep.summary}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <footer className="border-t border-slate-200 bg-white py-8">
-          <div className="mx-auto max-w-6xl px-4 text-center text-xs text-slate-500 sm:px-6">
-            SCEMAS · McMaster Software Design III · Group 6 Tutorial 01 · Zone summaries only; no raw sensor PII in public views.
+        <footer className="border-t border-ink-200/80 bg-ink-950 py-12 text-parchment">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="font-display text-xl font-bold">SCEMAS</p>
+                <p className="mt-2 max-w-sm text-sm text-ink-300 leading-relaxed">
+                  Software Design II: Smart City Environmental Monitoring &amp; Alert System. Zone summaries only in public
+                  views; no PII in telemetry paths we expose.
+                </p>
+              </div>
+              <div className="text-sm text-ink-400">
+                <p className="font-semibold text-ink-200">Course</p>
+                <p className="mt-1">SE 3A04 · Tutorial 01 · Group 6</p>
+              </div>
+            </div>
+            <p className="mt-10 border-t border-white/10 pt-8 text-center text-xs text-ink-500">
+              Built for demonstration, not a production security posture.
+            </p>
           </div>
         </footer>
       </main>

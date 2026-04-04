@@ -41,7 +41,7 @@ export default function ConfirmDialog({
       />
 
       {/* Dialog panel */}
-      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-card-lg border border-slate-200/80 p-6 sm:p-7">
+      <div className="relative z-10 w-full max-w-md bg-parchment rounded-2xl shadow-card-lg border border-ink-200/90 p-6 sm:p-7">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-red-50 ring-1 ring-red-100 flex items-center justify-center">
             <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -51,8 +51,8 @@ export default function ConfirmDialog({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">{title}</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">{message}</p>
+            <h3 className="font-display text-lg font-bold text-ink-950 tracking-tight">{title}</h3>
+            <p className="mt-2 text-sm text-ink-600 leading-relaxed">{message}</p>
           </div>
         </div>
 

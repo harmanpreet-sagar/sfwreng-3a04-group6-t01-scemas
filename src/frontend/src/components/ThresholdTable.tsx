@@ -70,13 +70,13 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
   // or when the database has no thresholds at all.
   if (thresholds.length === 0) {
     return (
-      <div className="text-center py-16 px-4 text-slate-400">
-        <svg className="mx-auto w-12 h-12 mb-3 opacity-50 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="text-center py-16 px-4 text-ink-400">
+        <svg className="mx-auto w-12 h-12 mb-3 opacity-40 text-ink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
             d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
         </svg>
-        <p className="font-semibold text-slate-600">No thresholds match this filter</p>
-        <p className="text-sm mt-1 text-slate-500">Try clearing filters or add a new rule.</p>
+        <p className="font-display font-semibold text-ink-800">No thresholds match this filter</p>
+        <p className="text-sm mt-1 text-ink-500">Try clearing filters or add a new rule.</p>
       </div>
     );
   }
@@ -84,9 +84,9 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-100 text-sm">
+        <table className="min-w-full divide-y divide-ink-100 text-sm">
           <thead>
-            <tr className="bg-slate-800 text-left text-[11px] font-bold text-slate-300 uppercase tracking-widest">
+            <tr className="bg-ink-950 text-left text-[10px] font-bold text-parchment/85 uppercase tracking-[0.15em]">
               <th className="px-4 py-3.5 first:pl-5">ID</th>
               <th className="px-4 py-3">Zone</th>
               <th className="px-4 py-3">Metric</th>
@@ -97,21 +97,21 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
               {isAdmin && <th className="px-4 py-3.5 text-right pr-5">Actions</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
+          <tbody className="divide-y divide-ink-100/80 bg-white">
             {thresholds.map(t => (
-              <tr key={t.id} className="hover:bg-brand-50/40 transition-colors">
-                <td className="px-4 py-3.5 text-slate-400 font-mono text-xs first:pl-5">#{t.id}</td>
+              <tr key={t.id} className="hover:bg-moss-50/50 transition-colors">
+                <td className="px-4 py-3.5 text-ink-400 font-mono text-xs first:pl-5">#{t.id}</td>
 
                 <td className="px-4 py-3.5">
-                  <span className="inline-flex items-center gap-2 font-semibold text-slate-800">
-                    <span className="w-2 h-2 rounded-full bg-gradient-to-br from-brand-400 to-teal-500 shrink-0 shadow-sm" />
+                  <span className="inline-flex items-center gap-2 font-semibold text-ink-900">
+                    <span className="w-2 h-2 rounded-full bg-gradient-to-br from-moss-500 to-moss-700 shrink-0 shadow-sm ring-1 ring-moss-600/20" />
                     {t.zone}
                   </span>
                 </td>
 
-                <td className="px-4 py-3.5 capitalize text-slate-700 font-medium">{t.metric}</td>
+                <td className="px-4 py-3.5 capitalize text-ink-700 font-medium">{t.metric}</td>
 
-                <td className="px-4 py-3.5 font-mono text-sm text-slate-800">
+                <td className="px-4 py-3.5 font-mono text-sm text-ink-900">
                   {CONDITION_LABEL[t.condition] ?? t.condition}{' '}
                   <span className="font-semibold">{t.threshold_value}</span>
                 </td>
@@ -133,8 +133,8 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
                       disabled={togglingId === t.id}
                       onClick={() => handleToggle(t)}
                       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent
-                        transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60
-                        ${t.is_active ? 'bg-gradient-to-r from-brand-600 to-teal-600' : 'bg-slate-300'}`}
+                        transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss-500 focus-visible:ring-offset-2 disabled:opacity-60
+                        ${t.is_active ? 'bg-gradient-to-r from-moss-600 to-moss-800' : 'bg-ink-300'}`}
                     >
                       <span
                         className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200
@@ -144,7 +144,7 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
                   ) : (
                     // Operators see a static badge — the toggle switch is not rendered at all,
                     // not just disabled, so there is no ambiguity about whether they can interact.
-                    <span className={`badge ${t.is_active ? 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200/60' : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200/80'}`}>
+                    <span className={`badge ${t.is_active ? 'bg-moss-100 text-moss-900 ring-1 ring-moss-200/70' : 'bg-ink-100 text-ink-600 ring-1 ring-ink-200/80'}`}>
                       {t.is_active ? 'Active' : 'Inactive'}
                     </span>
                   )}
@@ -156,7 +156,7 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
                       {/* Edit opens the form modal pre-populated with this row's values */}
                       <button
                         onClick={() => onEdit(t)}
-                        className="btn-ghost p-2 text-brand-700 hover:text-brand-800 hover:bg-brand-50 rounded-lg"
+                        className="btn-ghost p-2 text-moss-700 hover:text-moss-900 hover:bg-moss-50 rounded-lg"
                         title="Edit threshold"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

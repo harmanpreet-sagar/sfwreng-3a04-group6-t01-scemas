@@ -5,41 +5,106 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Custom palette tokens (hex) — duplicated from tailwind.config.js so @apply never
+ * depends on resolving bg-parchment / text-ink-* inside @layer (breaks some Docker/PostCSS setups).
+ */
 @layer base {
+  html {
+    @apply scroll-smooth;
+  }
   body {
-    @apply bg-slate-50 text-slate-900 antialiased font-sans;
+    @apply antialiased font-sans leading-relaxed;
+    font-size: 15px;
+    background-color: #f7f4ef; /* parchment */
+    color: #1e2433; /* ink-900 */
+  }
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: theme('fontFamily.display');
   }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-gradient-to-br from-brand-600 to-teal-700 text-white shadow-sm hover:from-brand-500 hover:to-teal-600 focus-visible:ring-brand-500 active:scale-[0.98];
+    @apply btn text-white shadow-md active:scale-[0.98];
+    background-color: theme('colors.moss.600');
+    box-shadow:
+      0 4px 6px -1px rgb(23 61 48 / 0.15),
+      0 2px 4px -2px rgb(23 61 48 / 0.1);
+    --tw-ring-color: theme('colors.moss.500');
+    --tw-ring-offset-color: #f7f4ef;
+  }
+  .btn-primary:hover {
+    background-color: theme('colors.moss.500');
+    box-shadow:
+      0 2px 8px rgb(47 143 101 / 0.12),
+      0 12px 32px rgb(15 19 29 / 0.08);
   }
   .btn-secondary {
-    @apply btn bg-white text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 focus-visible:ring-slate-400;
+    @apply btn bg-white text-ink-800 border shadow-sm hover:border-ink-300;
+    border-color: rgb(209 217 229 / 0.9); /* ink-200 */
+    --tw-ring-color: theme('colors.ink.400');
+    --tw-ring-offset-color: #f7f4ef;
+  }
+  .btn-secondary:hover {
+    background-color: #f7f4ef;
   }
   .btn-danger {
     @apply btn bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:ring-red-500 active:scale-[0.98];
   }
   .btn-ghost {
-    @apply btn text-slate-600 hover:bg-slate-100/80 rounded-lg focus-visible:ring-slate-300;
+    @apply btn text-ink-600 rounded-xl focus-visible:ring-ink-300;
+  }
+  .btn-ghost:hover {
+    background-color: rgb(232 236 242 / 0.8); /* ink-100 */
   }
   .input {
-    @apply block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25;
+    @apply block w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2;
+    border-color: rgb(209 217 229); /* ink-200 */
+    color: #1e2433;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.65);
+  }
+  .input::placeholder {
+    color: rgb(122 138 173); /* ink-400 */
+  }
+  .input:focus {
+    border-color: theme('colors.moss.500');
+    --tw-ring-color: rgb(47 143 101 / 0.2);
   }
   .label {
-    @apply block text-sm font-semibold text-slate-700 mb-1.5;
+    @apply block text-sm font-semibold mb-1.5;
+    color: #3c465e; /* ink-700 */
   }
   .card {
-    @apply bg-white rounded-2xl border border-slate-200/80 shadow-card;
+    @apply bg-white rounded-2xl border shadow-card;
+    border-color: rgb(209 217 229 / 0.6);
   }
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-tight;
   }
   .section-title {
-    @apply text-xs font-bold uppercase tracking-widest text-slate-500;
+    @apply text-[11px] font-bold uppercase tracking-[0.2em];
+    color: #5c6b8f; /* ink-500 */
+  }
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.25em];
+    color: #b8862f; /* honey-600 */
+  }
+  .shell-parchment {
+    min-height: 100vh;
+    background-color: #f7f4ef;
+    color: #1e2433;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  .shell-ink {
+    min-height: 100vh;
+    background-color: #0f131d;
+    color: #f7f4ef;
   }
 }
