@@ -42,8 +42,11 @@ services:
       # MQTT connection settings (defaults to mosquitto service)
       - MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
       - MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-8883}
+      # CA cert path inside the container (matches the volume mount below)
+      - MQTT_CA_CERT_PATH=/mosquitto/config/certs/ca.crt
     volumes:
       - ./backend:/app  # Mount for hot-reload during development
+      - ./mosquitto/config/certs:/mosquitto/config/certs:ro  # TLS CA cert for MQTT subscriber
     depends_on:
       - mosquitto  # Ensure MQTT broker starts first
     restart: unless-stopped

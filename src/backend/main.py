@@ -15,8 +15,8 @@ Wiring status
   alerts       ✓ merged (Harmanpreet)
   thresholds   ✓ merged (Harmanpreet)
   validation   ✓ merged (Ali)
-  public        ✓ merged (Harmanpreet)
-  accounts     ⏳ waiting for Jason's PR  (app/routers/accounts.py)
+  public       ✓ merged (Harmanpreet)
+  accounts     ✓ merged (Jason)
 """
 
 from __future__ import annotations
@@ -27,6 +27,8 @@ import importlib
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO)
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -159,7 +161,7 @@ app.include_router(public_demo_router.router)
 app.include_router(public_zones_router.router)
 
 # ── Pending routers — auto-activate the moment the PR is merged ───────────────
-_try_include_router("app.routers.accounts", "Account Management")   # Jason
+# accounts is already merged and hard-imported above — no pending routers remain.
 
 
 # ── Utility endpoints ──────────────────────────────────────────────────────────

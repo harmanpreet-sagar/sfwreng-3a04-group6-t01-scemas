@@ -5,10 +5,14 @@
 #   ./scripts/generate_certs.sh
 #
 # What gets written to src/mosquitto/config/certs/:
-#   ca.crt      — CA certificate           COMMIT THIS
-#   server.crt  — server certificate       COMMIT THIS
+#   ca.crt      — CA certificate           DO NOT COMMIT (gitignored)
+#   server.crt  — server certificate       DO NOT COMMIT (gitignored)
 #   ca.key      — CA private key           DO NOT COMMIT (gitignored)
 #   server.key  — server private key       DO NOT COMMIT (gitignored)
+#
+# All four files are gitignored. Every developer runs this script once after
+# cloning. Committing .crt while .key is gitignored causes a key/cert mismatch
+# whenever a teammate regenerates the key — all four files must stay in sync locally.
 #
 # After running, restart Mosquitto to pick up the new certs:
 #   docker-compose restart mosquitto
