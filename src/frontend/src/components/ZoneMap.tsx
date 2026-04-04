@@ -128,7 +128,7 @@ export default function ZoneMap({ thresholds, selectedZone, onZoneClick }: Props
             // Selected marker is larger to indicate which zone filters the table
             radius={isSelected ? 32 : 24}
             pathOptions={{
-              color:       isSelected ? '#1d4ed8' : colour,
+              color:       isSelected ? '#0f766e' : colour,
               fillColor:   colour,
               fillOpacity: isSelected ? 0.85 : 0.55,
               weight:      isSelected ? 3 : 1.5,

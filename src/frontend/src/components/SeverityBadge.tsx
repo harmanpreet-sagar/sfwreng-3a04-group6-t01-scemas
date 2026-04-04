@@ -15,15 +15,15 @@
 import type { Severity } from '../types';
 
 const STYLES: Record<Severity, string> = {
-  low:      'bg-green-100  text-green-800',
-  medium:   'bg-yellow-100 text-yellow-800',
-  high:     'bg-orange-100 text-orange-800',
-  critical: 'bg-red-100    text-red-800',
+  low:      'bg-emerald-100  text-emerald-900  ring-emerald-200/70',
+  medium:   'bg-amber-100    text-amber-950   ring-amber-200/80',
+  high:     'bg-orange-100   text-orange-950  ring-orange-200/70',
+  critical: 'bg-red-100      text-red-950     ring-red-200/70',
 };
 
 export default function SeverityBadge({ severity }: { severity: Severity }) {
   return (
-    <span className={`badge ${STYLES[severity]} capitalize`}>
+    <span className={`badge ring-1 ${STYLES[severity]} capitalize`}>
       {severity}
     </span>
   );

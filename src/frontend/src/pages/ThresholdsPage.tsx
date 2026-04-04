@@ -167,33 +167,37 @@ export default function ThresholdsPage() {
   const uniqueMetrics = [...new Set(thresholds.map(t => t.metric))].sort();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ── Top nav ─────────────────────────────────────────────────────────── */}
-      <header className="bg-slate-900 text-white shadow-md">
-        <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-100 via-white to-brand-50/40">
+      <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950 text-white shadow-lg shadow-slate-900/20">
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-500/60 to-transparent" aria-hidden />
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-teal-600 flex items-center justify-center shadow-md shadow-teal-900/30 shrink-0 ring-1 ring-white/10">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round"
                   d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
               </svg>
             </div>
-            <span className="font-semibold tracking-tight text-lg">SCEMAS</span>
-            <span className="hidden sm:block text-slate-400 text-sm ml-2">Threshold Management</span>
+            <div className="min-w-0">
+              <span className="font-bold tracking-tight text-lg block leading-tight">SCEMAS</span>
+              <span className="hidden sm:block text-slate-400 text-xs font-medium">Threshold management</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:block text-sm text-slate-300">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <span className="hidden md:block text-sm text-slate-300 truncate max-w-[200px]">
               {account?.name}
-              {/* Clearance badge colour distinguishes admin from operator at a glance */}
-              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full font-medium
-                ${isAdmin ? 'bg-blue-700 text-blue-100' : 'bg-slate-700 text-slate-300'}`}>
+              <span
+                className={`ml-2 text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-md font-bold
+                ${isAdmin ? 'bg-brand-600/30 text-brand-200 ring-1 ring-brand-500/30' : 'bg-slate-800 text-slate-400 ring-1 ring-slate-600/50'}`}
+              >
                 {account?.clearance}
               </span>
             </span>
             <button
+              type="button"
               onClick={() => { signOut(); navigate('/login', { replace: true }); }}
-              className="btn-ghost text-slate-300 hover:text-white hover:bg-slate-700 text-sm"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
             >
               Sign out
             </button>
@@ -201,37 +205,44 @@ export default function ThresholdsPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-screen-xl mx-auto w-full px-6 py-6 space-y-6">
+      <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-8">
 
         {/* ── OPERATOR read-only banner ───────────────────────────────────────
             Shown proactively so operators understand why they cannot see the
             "New rule" button or toggle switches before they go looking for them. */}
         {!isAdmin && (
-          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-3 text-sm text-amber-800">
-            <svg className="w-5 h-5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
+          <div className="rounded-2xl bg-amber-50/90 border border-amber-200/80 px-4 py-3.5 flex items-center gap-3 text-sm text-amber-950 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+            </div>
             <span>You are logged in as <strong>OPERATOR</strong>. You can view thresholds but cannot create, edit, or delete them.</span>
           </div>
         )}
 
         {/* ── Stats row ──────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
-            { label: 'Total Rules',    value: thresholds.length, colour: 'text-blue-600',  bg: 'bg-blue-50'  },
-            { label: 'Active',         value: totalActive,        colour: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Critical Rules', value: totalCritical,      colour: 'text-red-600',   bg: 'bg-red-50'   },
-            { label: 'Zones Covered',  value: uniqueZones.length, colour: 'text-purple-600',bg: 'bg-purple-50'},
-          ].map(({ label, value, colour, bg }) => (
-            <div key={label} className={`card p-4 ${bg}`}>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
-              <p className={`text-3xl font-bold mt-1 ${colour}`}>{value}</p>
+            { label: 'Total rules', value: thresholds.length, accent: 'from-sky-500 to-blue-600', text: 'text-sky-700' },
+            { label: 'Active', value: totalActive, accent: 'from-emerald-500 to-teal-600', text: 'text-emerald-700' },
+            { label: 'Critical', value: totalCritical, accent: 'from-rose-500 to-red-600', text: 'text-rose-700' },
+            { label: 'Zones', value: uniqueZones.length, accent: 'from-violet-500 to-purple-600', text: 'text-violet-700' },
+          ].map(({ label, value, accent, text }) => (
+            <div
+              key={label}
+              className="card group relative overflow-hidden p-4 sm:p-5 ring-1 ring-slate-900/[0.04] transition-shadow hover:shadow-card-lg"
+            >
+              <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br ${accent} opacity-[0.12] blur-2xl`} aria-hidden />
+              <p className="section-title relative">{label}</p>
+              <p className={`relative text-3xl sm:text-4xl font-bold tabular-nums mt-2 ${text}`}>{value}</p>
+              <div className={`relative mt-3 h-1 w-10 rounded-full bg-gradient-to-r ${accent}`} aria-hidden />
             </div>
           ))}
         </div>
 
         {/* ── Map + Chart row ─────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/*
             `isolate` creates a new CSS stacking context for this card.
             Leaflet sets its own internal z-indices up to ~700 on map layers.
@@ -239,10 +250,15 @@ export default function ThresholdsPage() {
             (z-[1000]) when it is opened. isolate keeps all Leaflet layers
             contained within this card's stacking context.
           */}
-          <div className="card overflow-hidden isolate">
-            <div className="px-4 pt-4 pb-2">
-              <h2 className="text-sm font-semibold text-gray-700">Zone Map</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Click a zone to filter the table</p>
+          <div className="card overflow-hidden isolate ring-1 ring-slate-900/[0.04]">
+            <div className="px-5 pt-5 pb-3 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-brand-50/30">
+              <div className="flex items-center gap-2">
+                <span className="h-8 w-1 rounded-full bg-gradient-to-b from-brand-500 to-teal-600" aria-hidden />
+                <div>
+                  <h2 className="text-sm font-bold text-slate-800">Zone map</h2>
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">Click a zone to filter the table</p>
+                </div>
+              </div>
             </div>
             <div className="h-60">
               <ZoneMap
@@ -253,9 +269,14 @@ export default function ThresholdsPage() {
             </div>
           </div>
 
-          <div className="card p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Active Thresholds by Severity</h2>
-            <p className="text-xs text-gray-400 mb-3">Stacked count per metric</p>
+          <div className="card p-5 ring-1 ring-slate-900/[0.04]">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="h-8 w-1 rounded-full bg-gradient-to-b from-brand-500 to-teal-600" aria-hidden />
+              <div>
+                <h2 className="text-sm font-bold text-slate-800">Active by severity</h2>
+                <p className="text-xs text-slate-500 font-medium">Stacked count per metric</p>
+              </div>
+            </div>
             <div className="h-52">
               <SeverityChart thresholds={thresholds} />
             </div>
@@ -263,14 +284,15 @@ export default function ThresholdsPage() {
         </div>
 
         {/* ── Table card ──────────────────────────────────────────────────────── */}
-        <div className="card">
-          {/* Card header with filter controls and (admin-only) create button */}
-          <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-3 justify-between">
-            <h2 className="font-semibold text-gray-800">
-              Threshold Rules
-              {/* Show filtered count so users know when a filter is narrowing the view */}
-              <span className="ml-2 text-sm font-normal text-gray-400">{visible.length} shown</span>
-            </h2>
+        <div className="card ring-1 ring-slate-900/[0.04] overflow-hidden">
+          <div className="px-4 sm:px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50/90 to-white flex flex-wrap items-center gap-3 justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="hidden sm:block h-8 w-1 rounded-full bg-gradient-to-b from-brand-500 to-teal-600 shrink-0" aria-hidden />
+              <h2 className="font-bold text-slate-900 truncate">
+                Threshold rules
+                <span className="ml-2 text-sm font-semibold text-slate-400 tabular-nums">{visible.length} shown</span>
+              </h2>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Zone filter — changing this also moves the map highlight */}
@@ -316,11 +338,12 @@ export default function ThresholdsPage() {
 
               {/* Manual refresh — useful when the evaluator has just fired */}
               <button
+                type="button"
                 onClick={() => void reload()}
-                className="btn-ghost p-1.5"
+                className="btn-ghost p-2 rounded-lg border border-transparent hover:border-slate-200"
                 title="Refresh"
               >
-                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round"
                     d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                 </svg>
@@ -340,20 +363,19 @@ export default function ThresholdsPage() {
 
           {/* Loading spinner — shown until the first fetch resolves */}
           {loading && (
-            <div className="flex items-center justify-center py-16 gap-2 text-gray-400">
-              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
+              <svg className="animate-spin w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Loading thresholds…
+              <p className="text-sm font-medium">Loading thresholds…</p>
             </div>
           )}
 
-          {/* Fetch error — shown with a retry link rather than an error boundary */}
           {!loading && fetchError && (
-            <div className="px-4 py-4 text-sm text-red-600 bg-red-50 border-t border-red-100">
-              {fetchError}
-              <button onClick={() => void reload()} className="ml-2 underline">Retry</button>
+            <div className="px-5 py-4 text-sm text-red-800 bg-red-50/90 border-t border-red-100 flex flex-wrap items-center gap-2">
+              <span>{fetchError}</span>
+              <button type="button" onClick={() => void reload()} className="font-semibold text-red-700 underline decoration-2 underline-offset-2 hover:text-red-900">Retry</button>
             </div>
           )}
 

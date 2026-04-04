@@ -41,10 +41,9 @@ export default function ConfirmDialog({
       />
 
       {/* Dialog panel */}
-      <div className="relative z-10 w-full max-w-sm bg-white rounded-xl shadow-2xl p-6">
+      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-card-lg border border-slate-200/80 p-6 sm:p-7">
         <div className="flex items-start gap-4">
-          {/* Warning icon gives the dialog an at-a-glance danger signal */}
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+          <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-red-50 ring-1 ring-red-100 flex items-center justify-center">
             <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round"
                 d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -52,17 +51,14 @@ export default function ConfirmDialog({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-            {/* message is provided by the caller with full context (e.g. zone, metric, value)
-                so the user knows exactly which rule will be deleted */}
-            <p className="mt-1 text-sm text-gray-500">{message}</p>
+            <h3 className="text-base font-bold text-slate-900 tracking-tight">{title}</h3>
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">{message}</p>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button className="btn-secondary" onClick={onCancel}>Cancel</button>
-          {/* btn-danger applies red styling, making the destructive action visually distinct */}
-          <button className="btn-danger" onClick={onConfirm}>{confirmLabel}</button>
+        <div className="mt-8 flex flex-wrap justify-end gap-3">
+          <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
+          <button type="button" className="btn-danger" onClick={onConfirm}>{confirmLabel}</button>
         </div>
       </div>
     </div>
