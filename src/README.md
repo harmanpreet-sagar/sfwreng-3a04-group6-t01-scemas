@@ -25,11 +25,20 @@
    # Edit .env and fill in all required values
    ```
 
-3. **Start all services with Docker Compose**
+3. **Start all services** (recommended — generates MQTT certs if missing, then builds and runs the stack)
 
    ```bash
-   docker-compose up --build
+   chmod +x start.sh   # once, if needed
+   ./start.sh
    ```
+
+   Or start Compose directly:
+
+   ```bash
+   docker compose up --build
+   ```
+
+   Subsequent restarts when dependencies have not changed: `./start.sh --no-build`
 
 4. **Access the application**
    - Frontend: <http://localhost:3000>
