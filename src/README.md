@@ -11,31 +11,48 @@
 
 ### Quick Start
 
-1. **Clone the repository**
+1. **Clone the repository** and go to the `src` folder (Compose and `start.sh` live here).
 
    ```bash
    git clone <repository-url>
    cd SFWRENG-3A04-Group6-T01/src
    ```
 
-2. **Configure environment variables**
+2. **Configure environment variables** in `src/.env` (Compose reads this file from `src/`).
 
    ```bash
    cp .env.example .env
-   # Edit .env and fill in all required values
+   # Edit .env — minimum: SUPABASE_DB_URL, JWT_SECRET
    ```
 
-3. **Start all services with Docker Compose**
+3. **Start all services** (recommended: script generates MQTT certs if missing, then runs Compose).
 
    ```bash
-   docker-compose up --build
+   chmod +x start.sh   # once, if needed
+   ./start.sh
    ```
 
+   Or invoke Compose yourself from `src/`:
+
+   ```bash
+   docker compose up --build
+   ```
+
+   After the first successful build, faster restarts: `./start.sh --no-build`
+
 4. **Access the application**
-   - Frontend: <http://localhost:3000>
-   - Backend API: <http://localhost:8000>
-   - API Documentation: <http://localhost:8000/docs>
-   - MQTT Broker: localhost:8883 (TLS enabled)
+   - **Frontend:** <http://localhost:3000>
+   - **Backend API:** <http://localhost:8000>
+   - **Swagger:** <http://localhost:8000/docs>
+   - **MQTT (TLS):** `localhost:8883`
+
+5. **Frontend CLI** — always run npm from **`frontend/`** (not from `src/`):
+
+   ```bash
+   cd frontend
+   npm install
+   npm run dev      # local Vite dev server (expects API at VITE_API_URL / default localhost:8000)
+   ```
 
 ### Project Structure
 
@@ -123,21 +140,23 @@ Copy `.env.example` to `.env` and configure:
 
 ### Docker Commands
 
+Run these from the `src/` directory (where `docker-compose.yml` lives). Prefer Compose v2: `docker compose`.
+
 ```bash
-# Start all services
-docker-compose up -d
+# Start all services (detached)
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop all services
-docker-compose down
+docker compose down
 
-# Rebuild services
-docker-compose up --build
+# Rebuild and start
+docker compose up --build
 
 # Stop and remove volumes
-docker-compose down -v
+docker compose down -v
 ```
 
 ### API Documentation

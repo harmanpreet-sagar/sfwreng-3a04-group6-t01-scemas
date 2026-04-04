@@ -56,6 +56,15 @@ else
   exit 1
 fi
 
+# Fail fast with a clear message — openssl cert generation uses `docker run` and
+# compose up needs the daemon as well.
+if ! docker info &>/dev/null; then
+  echo ""
+  echo "❌ Cannot connect to the Docker daemon."
+  echo "   Start Docker Desktop (macOS/Windows) or the Docker service (Linux), wait until it is fully running, then try again."
+  exit 1
+fi
+
 # ── Step 1: TLS certificates ──────────────────────────────────
 # Mosquitto requires TLS certificates to be present before it starts.
 # We generate them using openssl run inside an alpine Docker container

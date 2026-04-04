@@ -83,6 +83,8 @@ services:
       # the backend — must be accessible from the user's machine, not from inside
       # Docker, which is why it points to localhost rather than "backend".
       - VITE_API_URL=http://localhost:8000
+      # Same value as DEMO_PUBLIC_API_KEY — enables live colours on the public landing map
+      - VITE_PUBLIC_DEMO_API_KEY=${DEMO_PUBLIC_API_KEY:-}
       - VITE_MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mosquitto}
       - VITE_MQTT_BROKER_PORT=${MQTT_BROKER_PORT:-8883}
     volumes:

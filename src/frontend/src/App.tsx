@@ -5,9 +5,10 @@
  * as routes here later; today this file wires login, protected thresholds, and auth.
  *
  * Route structure:
- *  /login       → LoginPage (public, no auth required)
- *  /thresholds  → ThresholdsPage wrapped in RequireAuth (authenticated only)
- *  /*           → redirect to /thresholds (handles unknown paths gracefully)
+ *  /            → LandingPage (public marketing + zone map + API overview)
+ *  /login       → LoginPage (public)
+ *  /thresholds  → ThresholdsPage (JWT required)
+ *  /*           → redirect to /
  *
  * RequireAuth:
  *  Reads `account` from AuthContext. If null (not signed in or token cleared),
@@ -26,6 +27,7 @@
  */
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ThresholdsPage from './pages/ThresholdsPage';
 
@@ -44,6 +46,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
         path="/thresholds"
@@ -53,10 +56,7 @@ export default function App() {
           </RequireAuth>
         }
       />
-      {/* Catch-all: redirect any unknown path to the main dashboard.
-          If the user is not authenticated, RequireAuth will then redirect
-          them onward to /login. */}
-      <Route path="*" element={<Navigate to="/thresholds" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

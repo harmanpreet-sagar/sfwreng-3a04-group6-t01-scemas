@@ -113,13 +113,12 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal panel — uses relative z-10 to sit above the absolute backdrop */}
-      <div className="relative z-10 w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {isEdit ? 'Edit Threshold' : 'New Threshold'}
+      <div className="relative z-10 w-full max-w-lg bg-parchment rounded-2xl shadow-card-lg border border-ink-200/90 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink-100 bg-gradient-to-r from-parchment-deep to-moss-50/50">
+          <h2 className="font-display text-xl font-bold text-ink-950 tracking-tight">
+            {isEdit ? 'Edit threshold' : 'New threshold'}
           </h2>
-          <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg">
+          <button type="button" onClick={onClose} className="btn-ghost p-2 rounded-xl text-ink-500 hover:text-ink-900">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -130,7 +129,7 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
             on small displays; overflow-y-auto lets users scroll inside the modal instead. */}
         <form id="threshold-form" onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">
+            <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-800 font-medium">
               {error}
             </div>
           )}
@@ -213,7 +212,7 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
               {SEVERITIES.map(s => {
                 const ACTIVE_STYLES: Record<Severity, string> = {
                   low:      'bg-green-600  border-green-600  text-white',
-                  medium:   'bg-yellow-500 border-yellow-500 text-white',
+                  medium:   'bg-sky-500 border-sky-500 text-white',
                   high:     'bg-orange-500 border-orange-500 text-white',
                   critical: 'bg-red-600    border-red-600    text-white',
                 };
@@ -243,8 +242,8 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
               aria-checked={form.is_active}
               onClick={() => set('is_active', !form.is_active)}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent
-                transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
-                ${form.is_active ? 'bg-blue-600' : 'bg-gray-300'}`}
+                transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss-500 focus-visible:ring-offset-2
+                ${form.is_active ? 'bg-gradient-to-r from-moss-600 to-moss-800' : 'bg-ink-300'}`}
             >
               <span
                 className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200
@@ -261,13 +260,13 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
             Submit uses form="threshold-form" to trigger the form's onSubmit from
             outside the <form> element — necessary because the form is in the
             scrollable body while the button is in the sticky footer. */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-ink-100 bg-parchment-deep/60">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
           <button
             type="submit"
             form="threshold-form"
             disabled={saving}
-            className="btn-primary"
+            className="btn-primary min-w-[8rem]"
           >
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create threshold'}
           </button>

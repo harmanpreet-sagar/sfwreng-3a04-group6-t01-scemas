@@ -94,3 +94,51 @@ export const CONDITIONS: { value: Condition; label: string }[] = [
 ];
 
 export const SEVERITIES: Severity[] = ['low', 'medium', 'high', 'critical'];
+
+// ── Alerts (GET /alerts, SSE payloads) ───────────────────────────────────────
+
+export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
+
+export interface Alert {
+  id: number;
+  zone: string;
+  metric: string;
+  severity: Severity;
+  message: string;
+  status: AlertStatus;
+  source_type: string | null;
+  observed_value: number | null;
+  threshold_value: number | null;
+  threshold_id: number | null;
+  created_at: string;
+  updated_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+}
+
+/** One row from GET /alerts — wrapper matches FastAPI AlertListResponse */
+export interface AlertListResponse {
+  alerts: Alert[];
+  total: number;
+}
+
+/**
+ * JSON payload on SSE `data:` lines from GET /alerts/stream
+ * (see build_alert_sse_event in the backend).
+ */
+export interface SseAlertEvent {
+  event_type: 'alert.created' | 'alert.acknowledged' | 'alert.resolved' | string;
+  id: number;
+  status: AlertStatus;
+  severity: Severity;
+  zone: string;
+  metric: string;
+  message: string;
+  observed_value: number | null;
+  threshold_value: number | null;
+  threshold_id: number | null;
+  created_at: string;
+  updated_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+}

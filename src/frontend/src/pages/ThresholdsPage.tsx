@@ -35,22 +35,35 @@ import {
   listThresholds, createThreshold, updateThreshold,
   activateThreshold, deactivateThreshold, deleteThreshold,
 } from '../api/thresholds';
+import { listAlerts } from '../api/alerts';
+import { API_BASE } from '../api/client';
+import { openAlertSseStream } from '../lib/sseAlerts';
 import { useAuth } from '../context/AuthContext';
-import type { Threshold, ThresholdCreate } from '../types';
+import type { Alert, SseAlertEvent, Threshold, ThresholdCreate } from '../types';
 import ThresholdTable from '../components/ThresholdTable';
 import ThresholdFormModal from '../components/ThresholdFormModal';
 import SeverityChart from '../components/SeverityChart';
 import ZoneMap from '../components/ZoneMap';
+import ViolationAlertModal from '../components/ViolationAlertModal';
+import AlertsBrowserModal from '../components/AlertsBrowserModal';
+import { ScemasLogoMark } from '../components/ScemasLogoMark';
 
 type Filter = { zone: string; metric: string; status: 'all' | 'active' | 'inactive' };
 
 export default function ThresholdsPage() {
-  const { account, isAdmin, signOut } = useAuth();
+  const { account, token, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
 
   const [thresholds, setThresholds] = useState<Threshold[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
+  const [showAlertsBrowser, setShowAlertsBrowser] = useState(false);
+  const [browserInitialShowAll, setBrowserInitialShowAll] = useState(false);
+  const [violationQueue, setViolationQueue] = useState<SseAlertEvent[]>([]);
 
   // filter drives both the zone map selection highlight and the table rows shown.
   const [filter, setFilter] = useState<Filter>({ zone: '', metric: '', status: 'all' });
@@ -87,6 +100,66 @@ export default function ThresholdsPage() {
   }, [signOut, navigate]);
 
   useEffect(() => { void reload(); }, [reload]);
+
+  const loadAlerts = useCallback(async () => {
+    setAlertsLoading(true);
+    setAlertsError(null);
+    try {
+      const { alerts: rows } = await listAlerts();
+      setAlerts(rows);
+    } catch (err: unknown) {
+      if ((err as { response?: { status?: number } })?.response?.status === 401) {
+        signOut();
+        navigate('/login', { replace: true });
+        return;
+      }
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setAlertsError(typeof detail === 'string' ? detail : 'Failed to load alerts.');
+    } finally {
+      setAlertsLoading(false);
+    }
+  }, [signOut, navigate]);
+
+  useEffect(() => {
+    void loadAlerts();
+  }, [loadAlerts]);
+
+  const handleSseAlert = useCallback(
+    (evt: SseAlertEvent) => {
+      if (evt.event_type === 'alert.created') {
+        setViolationQueue(q => (q.some(x => x.id === evt.id) ? q : [...q, evt]));
+      }
+      void loadAlerts();
+    },
+    [loadAlerts],
+  );
+
+  useEffect(() => {
+    if (!token) return;
+    const authToken = token;
+    const ac = new AbortController();
+    let cancelled = false;
+
+    async function streamLoop() {
+      while (!cancelled && !ac.signal.aborted) {
+        try {
+          await openAlertSseStream(API_BASE, authToken, handleSseAlert, ac.signal);
+        } catch {
+          /* network drop or abort */
+        }
+        if (cancelled || ac.signal.aborted) break;
+        await new Promise(r => setTimeout(r, 4000));
+      }
+    }
+    void streamLoop();
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [token, handleSseAlert]);
+
+  const activeAlertCount = alerts.filter(a => a.status === 'active').length;
+  const currentViolation = violationQueue[0] ?? null;
 
   // ── CRUD handlers ────────────────────────────────────────────────────────────
   // Handlers receive the minimal payload from the form/table and delegate
@@ -167,33 +240,57 @@ export default function ThresholdsPage() {
   const uniqueMetrics = [...new Set(thresholds.map(t => t.metric))].sort();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ── Top nav ─────────────────────────────────────────────────────────── */}
-      <header className="bg-slate-900 text-white shadow-md">
-        <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
+    <div className="min-h-screen flex flex-col bg-parchment bg-noise-soft">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-moss-800 via-moss-800 to-moss-900 text-white shadow-lg shadow-moss-900/35">
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" aria-hidden />
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-[4.25rem] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-white text-moss-700 flex items-center justify-center shadow-lg shadow-moss-950/25 shrink-0 ring-2 ring-white/25">
+              <ScemasLogoMark className="w-5 h-5" />
             </div>
-            <span className="font-semibold tracking-tight text-lg">SCEMAS</span>
-            <span className="hidden sm:block text-slate-400 text-sm ml-2">Threshold Management</span>
+            <div className="min-w-0">
+              <span className="font-display font-bold tracking-tight text-lg block leading-tight">SCEMAS</span>
+              <span className="hidden sm:block text-moss-200/90 text-[10px] font-bold uppercase tracking-[0.2em]">Operator Dashboard</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:block text-sm text-slate-300">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setBrowserInitialShowAll(false);
+                setShowAlertsBrowser(true);
+                void loadAlerts();
+              }}
+              className="relative inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-moss-200"
+            >
+              <svg className="w-4 h-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                />
+              </svg>
+              Alerts
+              {activeAlertCount > 0 && (
+                <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-md bg-red-500 px-1 text-[11px] font-bold tabular-nums text-white shadow-sm">
+                  {activeAlertCount > 99 ? '99+' : activeAlertCount}
+                </span>
+              )}
+            </button>
+            <span className="hidden md:block text-sm text-moss-100/95 truncate max-w-[200px]">
               {account?.name}
-              {/* Clearance badge colour distinguishes admin from operator at a glance */}
-              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full font-medium
-                ${isAdmin ? 'bg-blue-700 text-blue-100' : 'bg-slate-700 text-slate-300'}`}>
+              <span
+                className={`ml-2 text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-md font-bold
+                ${isAdmin ? 'bg-moss-600/40 text-moss-100 ring-1 ring-moss-400/30' : 'bg-moss-900/70 text-moss-200 ring-1 ring-white/15'}`}
+              >
                 {account?.clearance}
               </span>
             </span>
             <button
+              type="button"
               onClick={() => { signOut(); navigate('/login', { replace: true }); }}
-              className="btn-ghost text-slate-300 hover:text-white hover:bg-slate-700 text-sm"
+              className="rounded-xl px-3 py-2 text-sm font-semibold text-moss-100/90 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-moss-200"
             >
               Sign out
             </button>
@@ -201,37 +298,46 @@ export default function ThresholdsPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-screen-xl mx-auto w-full px-6 py-6 space-y-6">
+      <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 space-y-10">
 
         {/* ── OPERATOR read-only banner ───────────────────────────────────────
             Shown proactively so operators understand why they cannot see the
             "New rule" button or toggle switches before they go looking for them. */}
         {!isAdmin && (
-          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-3 text-sm text-amber-800">
-            <svg className="w-5 h-5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
-            <span>You are logged in as <strong>OPERATOR</strong>. You can view thresholds but cannot create, edit, or delete them.</span>
+          <div className="rounded-2xl border border-moss-300/50 bg-gradient-to-r from-moss-100/60 to-parchment px-4 py-4 flex items-center gap-3 text-sm text-ink-900 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-moss-700 text-white">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span>
+              Signed in as <strong>OPERATOR</strong> — read-only thresholds. Alerts and maps stay available; rule changes require an admin.
+            </span>
           </div>
         )}
 
         {/* ── Stats row ──────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
-            { label: 'Total Rules',    value: thresholds.length, colour: 'text-blue-600',  bg: 'bg-blue-50'  },
-            { label: 'Active',         value: totalActive,        colour: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Critical Rules', value: totalCritical,      colour: 'text-red-600',   bg: 'bg-red-50'   },
-            { label: 'Zones Covered',  value: uniqueZones.length, colour: 'text-purple-600',bg: 'bg-purple-50'},
-          ].map(({ label, value, colour, bg }) => (
-            <div key={label} className={`card p-4 ${bg}`}>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
-              <p className={`text-3xl font-bold mt-1 ${colour}`}>{value}</p>
+            { label: 'Total rules', value: thresholds.length, accent: 'from-sky-600 to-blue-700', text: 'text-sky-800' },
+            { label: 'Active', value: totalActive, accent: 'from-moss-500 to-moss-700', text: 'text-moss-800' },
+            { label: 'Critical', value: totalCritical, accent: 'from-rose-600 to-red-700', text: 'text-red-800' },
+            { label: 'Zones', value: uniqueZones.length, accent: 'from-violet-600 to-indigo-700', text: 'text-violet-900' },
+          ].map(({ label, value, accent, text }) => (
+            <div
+              key={label}
+              className="card group relative overflow-hidden p-4 sm:p-5 border-ink-200/70 transition-all duration-300 hover:border-moss-200 hover:shadow-lift"
+            >
+              <div className={`absolute -right-6 -top-6 h-28 w-28 rounded-full bg-gradient-to-br ${accent} opacity-[0.14] blur-2xl`} aria-hidden />
+              <p className="section-title relative">{label}</p>
+              <p className={`font-display relative text-3xl sm:text-4xl font-bold tabular-nums mt-2 ${text}`}>{value}</p>
+              <div className={`relative mt-3 h-1 w-12 rounded-full bg-gradient-to-r ${accent}`} aria-hidden />
             </div>
           ))}
         </div>
 
         {/* ── Map + Chart row ─────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/*
             `isolate` creates a new CSS stacking context for this card.
             Leaflet sets its own internal z-indices up to ~700 on map layers.
@@ -239,10 +345,15 @@ export default function ThresholdsPage() {
             (z-[1000]) when it is opened. isolate keeps all Leaflet layers
             contained within this card's stacking context.
           */}
-          <div className="card overflow-hidden isolate">
-            <div className="px-4 pt-4 pb-2">
-              <h2 className="text-sm font-semibold text-gray-700">Zone Map</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Click a zone to filter the table</p>
+          <div className="card overflow-hidden isolate border-ink-200/80">
+            <div className="px-5 pt-5 pb-3 border-b border-ink-100 bg-gradient-to-r from-parchment-deep to-moss-50/40">
+              <div className="flex items-center gap-3">
+                <span className="h-9 w-1.5 rounded-full bg-gradient-to-b from-moss-600 to-moss-400" aria-hidden />
+                <div>
+                  <h2 className="font-display text-base font-bold text-ink-950">Zone map</h2>
+                  <p className="text-xs text-ink-500 mt-0.5 font-medium">Tap a marker to filter the rules table</p>
+                </div>
+              </div>
             </div>
             <div className="h-60">
               <ZoneMap
@@ -253,9 +364,14 @@ export default function ThresholdsPage() {
             </div>
           </div>
 
-          <div className="card p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Active Thresholds by Severity</h2>
-            <p className="text-xs text-gray-400 mb-3">Stacked count per metric</p>
+          <div className="card p-5 border-ink-200/80">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="h-9 w-1.5 rounded-full bg-gradient-to-b from-brand-500 to-moss-300" aria-hidden />
+              <div>
+                <h2 className="font-display text-base font-bold text-ink-950">Active by severity</h2>
+                <p className="text-xs text-ink-500 font-medium">Stacked counts for live rules only</p>
+              </div>
+            </div>
             <div className="h-52">
               <SeverityChart thresholds={thresholds} />
             </div>
@@ -263,14 +379,15 @@ export default function ThresholdsPage() {
         </div>
 
         {/* ── Table card ──────────────────────────────────────────────────────── */}
-        <div className="card">
-          {/* Card header with filter controls and (admin-only) create button */}
-          <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-3 justify-between">
-            <h2 className="font-semibold text-gray-800">
-              Threshold Rules
-              {/* Show filtered count so users know when a filter is narrowing the view */}
-              <span className="ml-2 text-sm font-normal text-gray-400">{visible.length} shown</span>
-            </h2>
+        <div className="card border-ink-200/80 overflow-hidden shadow-card-lg">
+          <div className="px-4 sm:px-5 py-4 border-b border-ink-100 bg-gradient-to-r from-white via-parchment/50 to-moss-50/30 flex flex-wrap items-center gap-3 justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="hidden sm:block h-9 w-1.5 rounded-full bg-gradient-to-b from-ink-800 to-moss-600 shrink-0" aria-hidden />
+              <h2 className="font-display font-bold text-ink-950 truncate text-lg">
+                Threshold rules
+                <span className="ml-2 text-sm font-sans font-semibold text-ink-400 tabular-nums">{visible.length} shown</span>
+              </h2>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Zone filter — changing this also moves the map highlight */}
@@ -308,7 +425,7 @@ export default function ThresholdsPage() {
               {(filter.zone || filter.metric || filter.status !== 'all') && (
                 <button
                   onClick={() => { setFilter({ zone: '', metric: '', status: 'all' }); setSelectedZone(null); }}
-                  className="btn-ghost !text-xs text-gray-400"
+                  className="btn-ghost !text-xs text-ink-500"
                 >
                   Clear
                 </button>
@@ -316,11 +433,15 @@ export default function ThresholdsPage() {
 
               {/* Manual refresh — useful when the evaluator has just fired */}
               <button
-                onClick={() => void reload()}
-                className="btn-ghost p-1.5"
-                title="Refresh"
+                type="button"
+                onClick={() => {
+                  void reload();
+                  void loadAlerts();
+                }}
+                className="btn-ghost p-2 rounded-xl border border-transparent hover:border-ink-200"
+                title="Refresh thresholds and alerts"
               >
-                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 text-ink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round"
                     d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                 </svg>
@@ -340,20 +461,19 @@ export default function ThresholdsPage() {
 
           {/* Loading spinner — shown until the first fetch resolves */}
           {loading && (
-            <div className="flex items-center justify-center py-16 gap-2 text-gray-400">
-              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-ink-500">
+              <svg className="animate-spin w-8 h-8 text-moss-600" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Loading thresholds…
+              <p className="text-sm font-medium">Loading thresholds…</p>
             </div>
           )}
 
-          {/* Fetch error — shown with a retry link rather than an error boundary */}
           {!loading && fetchError && (
-            <div className="px-4 py-4 text-sm text-red-600 bg-red-50 border-t border-red-100">
-              {fetchError}
-              <button onClick={() => void reload()} className="ml-2 underline">Retry</button>
+            <div className="px-5 py-4 text-sm text-red-900 bg-red-50 border-t border-red-100 flex flex-wrap items-center gap-2">
+              <span>{fetchError}</span>
+              <button type="button" onClick={() => void reload()} className="font-semibold text-red-700 underline decoration-2 underline-offset-2 hover:text-red-900">Retry</button>
             </div>
           )}
 
@@ -379,6 +499,30 @@ export default function ThresholdsPage() {
           onClose={closeForm}
         />
       )}
+
+      {currentViolation && (
+        <ViolationAlertModal
+          event={currentViolation}
+          onDismiss={() => setViolationQueue(q => q.slice(1))}
+          onResolved={() => void loadAlerts()}
+          onViewAllAlerts={() => {
+            setViolationQueue(q => q.slice(1));
+            setBrowserInitialShowAll(true);
+            setShowAlertsBrowser(true);
+            void loadAlerts();
+          }}
+        />
+      )}
+
+      <AlertsBrowserModal
+        isOpen={showAlertsBrowser}
+        onClose={() => setShowAlertsBrowser(false)}
+        alerts={alerts}
+        loading={alertsLoading}
+        error={alertsError}
+        initialShowAll={browserInitialShowAll}
+        onRefresh={() => void loadAlerts()}
+      />
     </div>
   );
 }
