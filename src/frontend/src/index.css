@@ -1,30 +1,42 @@
-/**
- * Global Styles for Threshold Management System
- * Base styling and layout utilities
- */
+/* Leaflet map CSS must come before @tailwind directives */
+@import 'leaflet/dist/leaflet.css';
 
-/* CSS Reset - ensures consistent rendering across browsers */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;  /* Include padding and border in element width/height */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
 }
 
-/* Body styling with system font stack for native appearance */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;      /* Better font rendering on macOS */
-  -moz-osx-font-smoothing: grayscale;       /* Better font rendering on Firefox */
-}
-
-/* Main application container - centered layout for landing page */
-.App {
-  min-height: 100vh;          /* Full viewport height */
-  display: flex;
-  flex-direction: column;     /* Stack children vertically */
-  align-items: center;        /* Center horizontally */
-  justify-content: center;    /* Center vertically */
-  padding: 2rem;
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-300;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  .btn-ghost {
+    @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-300;
+  }
+  .input {
+    @apply block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
 }

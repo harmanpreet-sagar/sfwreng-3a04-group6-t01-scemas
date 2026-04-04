@@ -1,33 +1,70 @@
+# ============================================================
 # Operating System
+# ============================================================
 .DS_Store
 Thumbs.db
 *.swp
 *.swo
 *~
 
+# ============================================================
 # IDEs and Editors
+# ============================================================
 .vscode/
 .idea/
 *.iml
 *.sublime-workspace
 *.sublime-project
 
-# Compiled Diagrams (optional - uncomment if you want to regenerate from source)
-# docs/diagrams/compiled/
-
-# Temporary files
+# ============================================================
+# Temporary and log files
+# ============================================================
 *.tmp
 *.bak
 *.log
 
-# Node.js (if using JavaScript/TypeScript)
+# ============================================================
+# Environment / credentials — NEVER COMMIT
+# ============================================================
+.env
+.env.*
+*.env
+.env.local
+.env.production
+.env.staging
+
+# ============================================================
+# TLS certificates and keys — NEVER COMMIT
+# All cert material is generated locally via scripts/generate_certs.sh.
+# Committing .crt alongside a gitignored .key causes key/cert mismatch
+# when a teammate regenerates the key — which is exactly the failure mode
+# we hit on Day 3. Gitignore everything and regenerate locally.
+# ============================================================
+src/mosquitto/config/certs/*.key
+src/mosquitto/config/certs/*.crt
+src/mosquitto/config/certs/*.csr
+src/mosquitto/config/certs/*.srl
+src/mosquitto/config/certs/*.pem
+
+# ============================================================
+# MQTT / Mosquitto runtime data — NEVER COMMIT
+# ============================================================
+src/mosquitto/config/passwd
+src/mosquitto/data/
+src/mosquitto/log/
+
+# ============================================================
+# Node.js
+# ============================================================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Python (if using Python)
+# ============================================================
+# Python
+# ============================================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -35,10 +72,19 @@ __pycache__/
 .Python
 venv/
 env/
-.env
+.venv/
 *.egg-info/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 
-# Java (if using Java)
+# ============================================================
+# Java
+# ============================================================
 *.class
 *.jar
 *.war
@@ -46,46 +92,38 @@ target/
 .gradle/
 build/
 
+# ============================================================
 # Build artifacts
+# ============================================================
 dist/
 build/
 out/
 
-# Environment variables
-.env
-.env.local
-
-# Locks and caches
-*.lock
-.cache/
-
-# Word temporary files
-~$*.doc*
-~$*.xls*
-~$*.ppt*
-
-# Docker
-*.log
-docker-compose.override.yml
-
-# MQTT/Mosquitto
-src/mosquitto/config/passwd
-src/mosquitto/data/
-src/mosquitto/log/
-
-# TLS Certificates - NEVER commit private keys or certificate signing requests
-# Public certificates (.crt) can be committed for development
-src/mosquitto/config/certs/*.key
-src/mosquitto/config/certs/*.csr
-src/mosquitto/config/certs/*.srl
-
-# Frontend build
+# ============================================================
+# Frontend build output
+# ============================================================
 src/frontend/dist/
 src/frontend/.vite/
 
-# Python additional
-*.pyc
-.pytest_cache/
-.mypy_cache/
-.coverage
-htmlcov/
+# ============================================================
+# Docker
+# ============================================================
+docker-compose.override.yml
+
+# ============================================================
+# Locks and caches
+# ============================================================
+*.lock
+.cache/
+
+# ============================================================
+# Compiled Diagrams (optional — uncomment to regenerate from source)
+# ============================================================
+# docs/diagrams/compiled/
+
+# ============================================================
+# Word temporary files
+# ============================================================
+~$*.doc*
+~$*.xls*
+~$*.ppt*

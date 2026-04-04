@@ -1,46 +1,129 @@
+"""
+MQTT subscriber background task (Ali).
+
+Connects to the Mosquitto broker over TLS, subscribes to scemas/sensors/#,
+and passes each incoming message through the validation pipeline.
+
+process_message() is synchronous (psycopg-based) so the paho on_message
+callback calls it directly — asyncio.run() is no longer needed.
+
+tls_insecure_set(True) is intentional for local/Docker environments: the
+server cert CN is "mosquitto" which won't match "localhost" as a hostname.
+Remove this in production when using a properly CA-signed cert.
+
+Configuration (env / .env):
+    MQTT_BROKER_HOST   default: localhost   (use "mosquitto" inside Docker)
+    MQTT_BROKER_PORT   default: 8883
+    MQTT_USERNAME      default: admin
+    MQTT_PASSWORD      default: admin123
+    MQTT_CA_CERT_PATH  default: ./mosquitto/config/certs/ca.crt
+"""
+
+from __future__ import annotations
+
 import asyncio
 import json
 import os
+
 import paho.mqtt.client as mqtt
 
 from app.services.validation_service import process_message
 
-MQTT_HOST = os.getenv("MQTT_BROKER_HOST", "localhost")
-MQTT_PORT = int(os.getenv("MQTT_BROKER_PORT", 8883))
-MQTT_USERNAME = "admin"
-MQTT_PASSWORD = "admin123"
-CA_CERT_PATH = os.getenv("MQTT_CA_CERT_PATH", "./mosquitto/config/certs/ca.crt")
+# Read broker config from environment so Docker and local runs use the same code.
+_HOST     = os.getenv("MQTT_BROKER_HOST",  "localhost")
+_PORT     = int(os.getenv("MQTT_BROKER_PORT", "8883"))
+_USERNAME = os.getenv("MQTT_USERNAME",     "admin")
+_PASSWORD = os.getenv("MQTT_PASSWORD",     "admin123")
+_CA_CERT  = os.getenv("MQTT_CA_CERT_PATH", "./mosquitto/config/certs/ca.crt")
 
-def on_message(client, userdata, msg):
+_TOPIC = "scemas/sensors/#"
+
+
+def on_connect(client, userdata, flags, rc) -> None:
+    """Called by paho once the TCP+TLS handshake and MQTT CONNACK are complete."""
+    if rc == 0:
+        print(f"✅ MQTT subscriber connected to {_HOST}:{_PORT}")
+        # Subscribe after a confirmed connection so we never miss messages
+        # that arrive before the subscribe ACK in edge-case reconnect scenarios.
+        client.subscribe(_TOPIC)
+        print(f"📡 Subscribed to topic: {_TOPIC}")
+    else:
+        # paho rc codes: 1=wrong protocol, 2=bad client id, 3=server unavailable,
+        # 4=bad credentials, 5=not authorised.
+        print(f"❌ MQTT connection failed (rc={rc}) — check broker credentials and TLS config")
+
+
+def on_disconnect(client, userdata, rc) -> None:
+    """Called whenever the connection drops, whether cleanly or unexpectedly."""
+    if rc == 0:
+        print("🔌 MQTT subscriber disconnected cleanly")
+    else:
+        # paho will attempt automatic reconnect when loop_start() is active.
+        print(f"⚠️  MQTT subscriber lost connection (rc={rc}) — paho will retry")
+
+
+def on_message(client, userdata, msg) -> None:
+    """
+    Called by paho's network thread for every incoming publish.
+
+    Decodes the JSON payload and hands it to the validation pipeline.
+    Errors are caught here so a single bad message never kills the subscriber.
+    """
     try:
         payload = json.loads(msg.payload.decode())
-        asyncio.run(process_message(payload))
-    except Exception as e:
-        print(f"❌ Error processing message: {e}")
+        zone   = payload.get("zone", "unknown")
+        metric = payload.get("metricType", "unknown")
+        value  = payload.get("value", "?")
+        print(f"📨 Message received — topic: {msg.topic} | zone: {zone} | {metric}: {value}")
 
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("✅ MQTT subscriber connected")
-        client.subscribe("scemas/sensors/#")
-    else:
-        print(f"❌ MQTT subscriber connection failed: {rc}")
+        # process_message is synchronous (psycopg) — no asyncio.run() needed
+        process_message(payload)
+        print(f"✅ Validation complete — zone: {zone} | {metric}: {value}")
 
-async def run_mqtt_subscriber():
+    except json.JSONDecodeError as exc:
+        print(f"❌ Non-JSON message on {msg.topic}: {exc}")
+    except Exception as exc:
+        print(f"❌ Error processing message on {msg.topic}: {exc}")
+
+
+async def run_mqtt_subscriber() -> None:
+    """
+    Async wrapper that keeps the paho client alive for the duration of the
+    FastAPI lifespan.
+
+    paho runs its own network thread via loop_start(), so this coroutine just
+    sleeps in 1-second intervals.  When the lifespan cancels this task, the
+    finally block shuts down the paho thread cleanly before the process exits.
+    """
+    client = mqtt.Client()
+    client.on_connect    = on_connect
+    client.on_disconnect = on_disconnect
+    client.on_message    = on_message
+    client.username_pw_set(_USERNAME, _PASSWORD)
+
+    print(f"🔌 Connecting to MQTT broker at {_HOST}:{_PORT}")
+    print(f"🔒 Using TLS — CA cert: {_CA_CERT}")
+
     try:
-        print(f"🔌 Connecting to MQTT at {MQTT_HOST}:{MQTT_PORT}")
-        print(f"🔌 Using CA cert: {CA_CERT_PATH}")
-        client = mqtt.Client()
-        client.on_connect = on_connect
-        client.on_message = on_message
-        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-        client.tls_set(ca_certs=CA_CERT_PATH)
+        client.tls_set(ca_certs=_CA_CERT)
+        # Hostname verification is skipped because the self-signed cert CN is
+        # "mosquitto", not the actual hostname used in local/Docker environments.
         client.tls_insecure_set(True)
-        client.connect(MQTT_HOST, MQTT_PORT)
+        client.connect(_HOST, _PORT)
+        # loop_start() spins up paho's network thread so connect/subscribe/receive
+        # all happen in the background without blocking the asyncio event loop.
         client.loop_start()
-    except Exception as e:
-        print(f"❌ MQTT subscriber failed to start: {e}")
+    except Exception as exc:
+        print(f"❌ MQTT subscriber failed to start: {exc}")
+        print("   Sensor readings will not be validated until the broker is reachable.")
         return
 
-    # Keep running forever
-    while True:
-        await asyncio.sleep(1)
+    try:
+        # Keep this coroutine alive so the paho thread stays running.
+        while True:
+            await asyncio.sleep(1)
+    finally:
+        # Graceful shutdown: flush any in-flight messages and close the TCP socket.
+        client.loop_stop()
+        client.disconnect()
+        print("🔌 MQTT subscriber shut down")
