@@ -8,7 +8,7 @@ import { resolveAlert } from '../api/alerts';
 
 const STATUS_STYLE: Record<AlertStatus, string> = {
   active: 'bg-red-100 text-red-900 ring-red-200/80',
-  acknowledged: 'bg-amber-100 text-amber-950 ring-amber-200/80',
+  acknowledged: 'bg-moss-100 text-moss-900 ring-moss-200/80',
   resolved: 'bg-slate-200 text-slate-800 ring-slate-300/80',
 };
 

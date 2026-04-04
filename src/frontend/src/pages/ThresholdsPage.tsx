@@ -46,6 +46,7 @@ import SeverityChart from '../components/SeverityChart';
 import ZoneMap from '../components/ZoneMap';
 import ViolationAlertModal from '../components/ViolationAlertModal';
 import AlertsBrowserModal from '../components/AlertsBrowserModal';
+import { ScemasLogoMark } from '../components/ScemasLogoMark';
 
 type Filter = { zone: string; metric: string; status: 'all' | 'active' | 'inactive' };
 
@@ -240,18 +241,16 @@ export default function ThresholdsPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-parchment bg-noise-soft">
-      <header className="sticky top-0 z-40 border-b border-ink-900/15 bg-ink-950 text-parchment shadow-lg shadow-ink-950/40">
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-honey-500/50 to-transparent" aria-hidden />
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-moss-800 via-moss-800 to-moss-900 text-white shadow-lg shadow-moss-900/35">
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" aria-hidden />
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-[4.25rem] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-honey-500 text-ink-950 flex items-center justify-center shadow-lg shadow-black/30 shrink-0 ring-2 ring-honey-400/40">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4M5.6 18.4l1.4-1.4m10-10L18.4 5.6" />
-              </svg>
+            <div className="w-10 h-10 rounded-2xl bg-white text-moss-700 flex items-center justify-center shadow-lg shadow-moss-950/25 shrink-0 ring-2 ring-white/25">
+              <ScemasLogoMark className="w-5 h-5" />
             </div>
             <div className="min-w-0">
               <span className="font-display font-bold tracking-tight text-lg block leading-tight">SCEMAS</span>
-              <span className="hidden sm:block text-ink-400 text-[10px] font-bold uppercase tracking-[0.2em]">Operator Dashboard</span>
+              <span className="hidden sm:block text-moss-200/90 text-[10px] font-bold uppercase tracking-[0.2em]">Operator Dashboard</span>
             </div>
           </div>
 
@@ -263,7 +262,7 @@ export default function ThresholdsPage() {
                 setShowAlertsBrowser(true);
                 void loadAlerts();
               }}
-              className="relative inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-honey-400"
+              className="relative inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-moss-200"
             >
               <svg className="w-4 h-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path
@@ -279,11 +278,11 @@ export default function ThresholdsPage() {
                 </span>
               )}
             </button>
-            <span className="hidden md:block text-sm text-ink-200 truncate max-w-[200px]">
+            <span className="hidden md:block text-sm text-moss-100/95 truncate max-w-[200px]">
               {account?.name}
               <span
                 className={`ml-2 text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-md font-bold
-                ${isAdmin ? 'bg-moss-600/40 text-moss-100 ring-1 ring-moss-400/30' : 'bg-ink-800 text-ink-300 ring-1 ring-ink-600/50'}`}
+                ${isAdmin ? 'bg-moss-600/40 text-moss-100 ring-1 ring-moss-400/30' : 'bg-moss-900/70 text-moss-200 ring-1 ring-white/15'}`}
               >
                 {account?.clearance}
               </span>
@@ -291,7 +290,7 @@ export default function ThresholdsPage() {
             <button
               type="button"
               onClick={() => { signOut(); navigate('/login', { replace: true }); }}
-              className="rounded-xl px-3 py-2 text-sm font-semibold text-ink-200 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-honey-400"
+              className="rounded-xl px-3 py-2 text-sm font-semibold text-moss-100/90 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-moss-200"
             >
               Sign out
             </button>
@@ -305,8 +304,8 @@ export default function ThresholdsPage() {
             Shown proactively so operators understand why they cannot see the
             "New rule" button or toggle switches before they go looking for them. */}
         {!isAdmin && (
-          <div className="rounded-2xl border border-honey-500/35 bg-gradient-to-r from-honey-400/15 to-parchment px-4 py-4 flex items-center gap-3 text-sm text-ink-900 shadow-sm">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ink-950 text-honey-400">
+          <div className="rounded-2xl border border-moss-300/50 bg-gradient-to-r from-moss-100/60 to-parchment px-4 py-4 flex items-center gap-3 text-sm text-ink-900 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-moss-700 text-white">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
@@ -367,7 +366,7 @@ export default function ThresholdsPage() {
 
           <div className="card p-5 border-ink-200/80">
             <div className="flex items-center gap-3 mb-4">
-              <span className="h-9 w-1.5 rounded-full bg-gradient-to-b from-honey-600 to-honey-400" aria-hidden />
+              <span className="h-9 w-1.5 rounded-full bg-gradient-to-b from-brand-500 to-moss-300" aria-hidden />
               <div>
                 <h2 className="font-display text-base font-bold text-ink-950">Active by severity</h2>
                 <p className="text-xs text-ink-500 font-medium">Stacked counts for live rules only</p>

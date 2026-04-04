@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PublicLandingMap from '../components/PublicLandingMap';
+import { ScemasLogoMark } from '../components/ScemasLogoMark';
 import {
   fetchPublicZones,
   isPublicApiConfigured,
@@ -85,10 +86,8 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-ink-900/10 bg-parchment/85 backdrop-blur-lg">
         <div className="mx-auto flex h-[4.25rem] max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-3 min-w-0 group">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ink-950 text-honey-400 shadow-lg shadow-ink-950/20 ring-2 ring-honey-500/30 transition group-hover:ring-honey-400/50">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4M5.6 18.4l1.4-1.4m10-10L18.4 5.6" />
-              </svg>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-moss-700 text-white shadow-md shadow-moss-900/15 ring-2 ring-moss-500/20 transition group-hover:ring-moss-400/35">
+              <ScemasLogoMark className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <span className="font-display text-lg font-bold tracking-tight text-ink-950 block leading-none">SCEMAS</span>
@@ -112,7 +111,7 @@ export default function LandingPage() {
             </a>
             <Link
               to="/login"
-              className="rounded-xl bg-ink-950 px-4 py-2.5 text-sm font-bold text-parchment shadow-md transition hover:bg-moss-800 hover:text-white"
+              className="rounded-xl bg-moss-700 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-moss-900/20 transition hover:bg-moss-600"
             >
               Operator sign-in
             </Link>
@@ -122,40 +121,40 @@ export default function LandingPage() {
 
       <main>
         {/* Hero */}
-        <section className="relative overflow-hidden border-b border-ink-900/10 bg-ink-950 text-parchment">
-          <div className="pointer-events-none absolute inset-0 bg-noise-soft opacity-[0.07] mix-blend-overlay" aria-hidden />
+        <section className="relative overflow-hidden border-b border-ink-200/70 bg-white/90">
+          <div className="pointer-events-none absolute inset-0 bg-noise-soft opacity-[0.35]" aria-hidden />
           <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-28">
-            <p className="eyebrow text-honey-400">Environmental monitoring</p>
-            <h1 className="font-display mt-4 max-w-3xl text-[2.35rem] font-bold leading-[1.08] tracking-tight text-parchment sm:text-5xl lg:text-[3.25rem]">
+            <p className="eyebrow text-moss-800">Environmental monitoring</p>
+            <h1 className="font-display mt-4 max-w-3xl text-[2.35rem] font-bold leading-[1.08] tracking-tight text-ink-950 sm:text-5xl lg:text-[3.25rem]">
               Air, noise, and climate signals made legible for cities.
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-ink-200 leading-relaxed">
+            <p className="mt-6 max-w-xl text-lg text-ink-600 leading-relaxed">
               SCEMAS ingests sensor streams, validates what is real, and publishes zone-level summaries. Residents see the
               story; operators get thresholds, alerts, and audit trails.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center rounded-xl bg-honey-500 px-6 py-3.5 text-sm font-bold text-ink-950 shadow-lg shadow-black/25 transition hover:bg-honey-400"
+                className="inline-flex items-center justify-center rounded-xl bg-moss-700 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-moss-900/20 transition hover:bg-moss-600"
               >
                 Open Dashboard
               </Link>
               <a
                 href="#map"
-                className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-xl border border-ink-300/90 bg-white px-6 py-3.5 text-sm font-semibold text-ink-800 shadow-sm transition hover:border-moss-300 hover:bg-moss-50/80"
               >
                 View coverage map
               </a>
             </div>
-            <div className="mt-14 grid grid-cols-3 gap-6 border-t border-white/10 pt-10 sm:max-w-lg">
+            <div className="mt-14 grid grid-cols-3 gap-6 border-t border-ink-200/80 pt-10 sm:max-w-lg">
               {[
                 { n: '4', l: 'Zones' },
                 { n: '4', l: 'Metrics' },
                 { n: '1', l: 'Public API' },
               ].map(s => (
                 <div key={s.l}>
-                  <p className="font-display text-3xl font-bold text-white sm:text-4xl">{s.n}</p>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-ink-400">{s.l}</p>
+                  <p className="font-display text-3xl font-bold text-ink-950 sm:text-4xl">{s.n}</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">{s.l}</p>
                 </div>
               ))}
             </div>
@@ -202,21 +201,23 @@ export default function LandingPage() {
                   <PublicLandingMap zones={publicZones} />
                 </div>
                 <p className="mt-3 text-xs text-ink-500 leading-relaxed max-w-prose">
-                  Hamilton / McMaster centroid. Teal markers reflect healthy summaries; amber and red hint at public-facing
+                  Hamilton / McMaster centroid. Teal markers reflect healthy summaries; orange and red hint at public-facing
                   alert severity when the API is wired.
                 </p>
               </div>
               <aside className="lg:col-span-2">
-                <div className="sticky top-24 rounded-2xl border border-ink-200/80 bg-ink-950 p-8 text-parchment shadow-xl">
-                  <p className="text-honey-400 text-xs font-bold uppercase tracking-[0.2em]">Operators</p>
-                  <h3 className="font-display mt-3 text-2xl font-bold leading-snug">Threshold rules & alert desk</h3>
-                  <ul className="mt-6 space-y-4 text-sm text-ink-200">
+                <div className="sticky top-24 rounded-2xl border border-ink-200/80 bg-white/95 p-8 shadow-card-lg backdrop-blur-sm">
+                  <p className="text-moss-800 text-xs font-bold uppercase tracking-[0.2em]">Operators</p>
+                  <h3 className="font-display mt-3 text-2xl font-bold leading-snug text-ink-950">
+                    Threshold rules & alert desk
+                  </h3>
+                  <ul className="mt-6 space-y-4 text-sm text-ink-600">
                     <li className="flex gap-3">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-honey-400" />
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
                       Role-based access: admins edit rules; operators monitor and resolve.
                     </li>
                     <li className="flex gap-3">
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-moss-400" />
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-moss-500" />
                       Charts and map stay in sync with the same threshold catalogue.
                     </li>
                     <li className="flex gap-3">
@@ -226,7 +227,7 @@ export default function LandingPage() {
                   </ul>
                   <Link
                     to="/login"
-                    className="mt-8 flex w-full items-center justify-center rounded-xl border border-white/20 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+                    className="mt-8 flex w-full items-center justify-center rounded-xl border border-moss-600/50 bg-moss-700 py-3.5 text-sm font-bold text-white transition hover:bg-moss-600"
                   >
                     Sign in to Dashboard →
                   </Link>
@@ -280,22 +281,22 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <footer className="border-t border-ink-200/80 bg-ink-950 py-12 text-parchment">
+        <footer className="border-t border-ink-200/80 bg-parchment-deep/90 py-12 text-ink-900">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="font-display text-xl font-bold">SCEMAS</p>
-                <p className="mt-2 max-w-sm text-sm text-ink-300 leading-relaxed">
+                <p className="font-display text-xl font-bold text-ink-950">SCEMAS</p>
+                <p className="mt-2 max-w-sm text-sm text-ink-600 leading-relaxed">
                   Software Design II: Smart City Environmental Monitoring &amp; Alert System. Zone summaries only in public
                   views; no PII in telemetry paths we expose.
                 </p>
               </div>
-              <div className="text-sm text-ink-400">
-                <p className="font-semibold text-ink-200">Course</p>
+              <div className="text-sm text-ink-600">
+                <p className="font-semibold text-ink-800">Course</p>
                 <p className="mt-1">SE 3A04 · Tutorial 01 · Group 6</p>
               </div>
             </div>
-            <p className="mt-10 border-t border-white/10 pt-8 text-center text-xs text-ink-500">
+            <p className="mt-10 border-t border-ink-200/70 pt-8 text-center text-xs text-ink-500">
               Built for demonstration, not a production security posture.
             </p>
           </div>

@@ -3,7 +3,7 @@
  *
  * Each zone is rendered as a CircleMarker centred on its real-world campus
  * coordinates. The marker colour reflects the worst active threshold severity
- * in that zone (critical → red, high → orange, medium → yellow, low → green,
+ * in that zone (critical → red, high → orange, medium → sky blue, low → green,
  * none → slate). This gives operators an instant spatial overview without
  * reading the table.
  *
@@ -42,7 +42,7 @@ import '../map/leafletDefaultIcon';
 // across all three components.
 const SEVERITY_COLOUR: Record<string, string> = {
   low:      '#22c55e',
-  medium:   '#eab308',
+  medium:   '#0ea5e9',
   high:     '#f97316',
   critical: '#ef4444',
 };

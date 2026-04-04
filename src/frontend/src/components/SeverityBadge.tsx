@@ -16,7 +16,7 @@ import type { Severity } from '../types';
 
 const STYLES: Record<Severity, string> = {
   low:      'bg-emerald-100  text-emerald-900  ring-emerald-200/70',
-  medium:   'bg-amber-100    text-amber-950   ring-amber-200/80',
+  medium:   'bg-sky-100      text-sky-950      ring-sky-200/80',
   high:     'bg-orange-100   text-orange-950  ring-orange-200/70',
   critical: 'bg-red-100      text-red-950     ring-red-200/70',
 };

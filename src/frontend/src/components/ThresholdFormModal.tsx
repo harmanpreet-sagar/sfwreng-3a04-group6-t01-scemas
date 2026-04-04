@@ -212,7 +212,7 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
               {SEVERITIES.map(s => {
                 const ACTIVE_STYLES: Record<Severity, string> = {
                   low:      'bg-green-600  border-green-600  text-white',
-                  medium:   'bg-yellow-500 border-yellow-500 text-white',
+                  medium:   'bg-sky-500 border-sky-500 text-white',
                   high:     'bg-orange-500 border-orange-500 text-white',
                   critical: 'bg-red-600    border-red-600    text-white',
                 };

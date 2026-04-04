@@ -86,7 +86,7 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-ink-100 text-sm">
           <thead>
-            <tr className="bg-ink-950 text-left text-[10px] font-bold text-parchment/85 uppercase tracking-[0.15em]">
+            <tr className="bg-moss-800 text-left text-[10px] font-bold text-white/90 uppercase tracking-[0.15em]">
               <th className="px-4 py-3.5 first:pl-5">ID</th>
               <th className="px-4 py-3">Zone</th>
               <th className="px-4 py-3">Metric</th>

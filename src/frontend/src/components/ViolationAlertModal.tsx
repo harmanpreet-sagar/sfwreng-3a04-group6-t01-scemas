@@ -111,8 +111,8 @@ export default function ViolationAlertModal({
               <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Status</dt>
               <dd className="font-semibold text-slate-900 mt-0.5 capitalize">{event.status}</dd>
             </div>
-            <div className="col-span-2 rounded-xl bg-amber-50/80 px-3 py-2 ring-1 ring-amber-100">
-              <dt className="text-xs font-bold uppercase tracking-wide text-amber-800/80">Message</dt>
+            <div className="col-span-2 rounded-xl bg-moss-50/90 px-3 py-2 ring-1 ring-moss-100">
+              <dt className="text-xs font-bold uppercase tracking-wide text-moss-800/90">Message</dt>
               <dd className="text-slate-800 mt-1 leading-relaxed">{event.message}</dd>
             </div>
             <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">

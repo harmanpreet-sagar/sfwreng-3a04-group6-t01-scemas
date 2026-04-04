@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
+import { ScemasLogoMark } from '../components/ScemasLogoMark';
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -38,34 +39,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-ink-950 p-4 sm:p-6">
-      <div className="pointer-events-none absolute inset-0 bg-mesh-hero opacity-80" aria-hidden />
-      <div className="pointer-events-none absolute inset-0 bg-noise-soft opacity-[0.06] mix-blend-overlay" aria-hidden />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.12]"
-        style={{
-          backgroundImage: `linear-gradient(to right, rgb(255 255 255 / 0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgb(255 255 255 / 0.04) 1px, transparent 1px)`,
-          backgroundSize: '56px 56px',
-        }}
-        aria-hidden
-      />
-
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-parchment bg-noise-soft px-4 py-10 sm:px-6 text-ink-900">
       <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-honey-500 text-ink-950 shadow-xl shadow-black/30 ring-4 ring-honey-400/25 mb-6 transition hover:ring-honey-300/40"
-          >
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4M5.6 18.4l1.4-1.4m10-10L18.4 5.6" />
-            </svg>
-          </Link>
-          <h1 className="font-display text-4xl font-bold text-white tracking-tight">SCEMAS</h1>
-          <p className="text-honey-400/95 text-xs font-bold uppercase tracking-[0.25em] mt-3">Operator access</p>
-        </div>
+        <div className="rounded-2xl border border-ink-200/70 bg-white/90 p-8 shadow-card-lg backdrop-blur-sm">
+          <div className="text-center border-b border-ink-100 pb-8 mb-8">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-moss-700 text-white shadow-md shadow-moss-900/15 ring-2 ring-moss-500/20 mb-5 transition hover:bg-moss-600 hover:ring-moss-400/35"
+            >
+              <ScemasLogoMark className="w-8 h-8" />
+            </Link>
+            <h1 className="font-display text-4xl font-bold text-ink-950 tracking-tight">SCEMAS</h1>
+            <p className="text-moss-800 text-xs font-bold uppercase tracking-[0.25em] mt-3">Operator access</p>
+          </div>
 
-        <div className="rounded-2xl border border-ink-200/20 bg-parchment/98 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm">
           <div className="mb-6">
             <h2 className="font-display text-2xl font-bold text-ink-950 tracking-tight">Welcome back</h2>
             <p className="text-sm text-ink-600 mt-1.5">Sign in to thresholds, alerts, and maps.</p>
@@ -149,12 +136,15 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="mt-8 text-center text-xs text-ink-400">
-          <Link to="/" className="font-semibold text-honey-400 hover:text-honey-300 underline-offset-2 hover:underline">
+        <p className="mt-8 text-center text-xs text-ink-500">
+          <Link
+            to="/"
+            className="font-semibold text-moss-800 hover:text-moss-950 underline-offset-2 hover:underline"
+          >
             ← Public site
           </Link>
-          <span className="mx-2 text-ink-600">·</span>
-          SE 3A04 · Group 6
+          <span className="mx-2 text-ink-400">·</span>
+          <span className="text-ink-500">SE 3A04 · Group 6</span>
         </p>
       </div>
     </div>

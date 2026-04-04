@@ -38,12 +38,6 @@ module.exports = {
           800: '#1a4a38',
           900: '#173d30',
         },
-        honey: {
-          300: '#f5e6a8',
-          400: '#e9cf6e',
-          500: '#d4a84b',
-          600: '#b8862f',
-        },
         brand: {
           50: '#f0fdfa',
           100: '#ccfbf1',
@@ -63,8 +57,11 @@ module.exports = {
       backgroundImage: {
         'noise-soft':
           "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
+        /** Bright moss gradient for hero / auth (replaces flat ink-950). */
+        'hero-forest':
+          'linear-gradient(158deg, #5abe8f 0%, #3d9d74 28%, #2f8f65 52%, #237352 78%, #1d5c44 100%)',
         'mesh-hero':
-          'radial-gradient(ellipse 100% 80% at 20% 20%, rgb(47 143 101 / 0.35), transparent 55%), radial-gradient(ellipse 70% 60% at 85% 10%, rgb(212 168 75 / 0.18), transparent 50%), radial-gradient(ellipse 60% 50% at 70% 90%, rgb(20 184 166 / 0.12), transparent 45%)',
+          'radial-gradient(ellipse 100% 80% at 20% 20%, rgb(47 143 101 / 0.35), transparent 55%), radial-gradient(ellipse 70% 60% at 85% 10%, rgb(130 207 168 / 0.22), transparent 50%), radial-gradient(ellipse 60% 50% at 70% 90%, rgb(20 184 166 / 0.12), transparent 45%)',
       },
     },
   },

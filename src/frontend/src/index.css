@@ -94,7 +94,7 @@
   }
   .eyebrow {
     @apply text-xs font-bold uppercase tracking-[0.25em];
-    color: #b8862f; /* honey-600 */
+    color: #237352; /* moss-600 */
   }
   .shell-parchment {
     min-height: 100vh;

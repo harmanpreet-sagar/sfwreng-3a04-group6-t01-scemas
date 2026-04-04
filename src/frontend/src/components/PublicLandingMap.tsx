@@ -10,7 +10,7 @@ import { staticZoneIds } from '../api/publicZones';
 
 const SEVERITY_FILL: Record<string, string> = {
   low: '#22c55e',
-  medium: '#eab308',
+  medium: '#0ea5e9',
   high: '#f97316',
   critical: '#ef4444',
 };
