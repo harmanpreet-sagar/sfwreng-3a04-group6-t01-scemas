@@ -1,3 +1,34 @@
+/**
+ * ThresholdsPage — the main dashboard of the SCEMAS threshold management UI.
+ *
+ * Layout (top → bottom):
+ *  1. Navigation bar  — displays the logged-in user's name / clearance and a sign-out button.
+ *  2. OPERATOR banner — shown only when clearance is not "admin" to explain read-only access.
+ *  3. Stats row       — four summary cards (total rules, active, critical, zones covered).
+ *  4. Map + Chart row — ZoneMap (Leaflet) left, SeverityChart (Recharts) right.
+ *  5. Table card      — filterable list of all threshold rules with inline CRUD actions.
+ *  6. ThresholdFormModal (overlay) — shown when creating or editing a rule.
+ *
+ * State management philosophy:
+ *  - `thresholds` is the canonical list fetched from the backend. All derived
+ *    views (stats, chart data, map markers, table rows) are computed from it —
+ *    there is no separate "local copy". CRUD handlers update this single array
+ *    optimistically rather than triggering a full refetch to avoid flicker.
+ *  - `filter` and `selectedZone` are kept in sync bidirectionally: clicking a
+ *    zone marker on the map updates the zone dropdown, and changing the zone
+ *    dropdown highlights the corresponding marker.
+ *
+ * Authentication / RBAC:
+ *  - A 401 response to listThresholds (e.g. expired token) automatically signs
+ *    the user out and redirects to /login rather than leaving them on a broken page.
+ *  - isAdmin gates the "New rule" button, the Edit/Delete actions in the table,
+ *    and the active toggle. Operators see the same data but cannot modify it.
+ *
+ * z-index note: the map card uses the `isolate` Tailwind class which creates
+ * a new CSS stacking context. This confines Leaflet's internal z-indices
+ * (which go up to ~700) so that the ThresholdFormModal at z-[1000] always
+ * renders on top of the map when opened.
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -21,13 +52,19 @@ export default function ThresholdsPage() {
   const [loading,    setLoading]    = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // filter drives both the zone map selection highlight and the table rows shown.
   const [filter, setFilter] = useState<Filter>({ zone: '', metric: '', status: 'all' });
+  // selectedZone mirrors filter.zone but is kept separate so ZoneMap can deselect
+  // by passing '' when the same zone is clicked twice (toggle behaviour).
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
 
   const [showForm,   setShowForm]   = useState(false);
+  // editTarget is null when creating a new rule and non-null when editing an existing one.
   const [editTarget, setEditTarget] = useState<Threshold | null>(null);
 
   // ── Load thresholds ──────────────────────────────────────────────────────────
+  // useCallback so that reload's identity is stable across renders — needed because
+  // it is listed in the useEffect dependency array below.
   const reload = useCallback(async () => {
     setFetchError(null);
     try {
@@ -35,6 +72,9 @@ export default function ThresholdsPage() {
       setThresholds(data);
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      // A 401 means the JWT has expired or was never issued (missing JWT_SECRET).
+      // Sign out and redirect rather than showing an error message that the user
+      // cannot resolve without logging back in.
       if ((err as { response?: { status?: number } })?.response?.status === 401) {
         signOut();
         navigate('/login', { replace: true });
@@ -49,8 +89,14 @@ export default function ThresholdsPage() {
   useEffect(() => { void reload(); }, [reload]);
 
   // ── CRUD handlers ────────────────────────────────────────────────────────────
+  // Handlers receive the minimal payload from the form/table and delegate
+  // the actual HTTP call to the API module. On success they patch the local
+  // `thresholds` array in-place — no full refetch required.
+
   async function handleSave(data: ThresholdCreate) {
     if (editTarget) {
+      // Strip is_active from the PATCH body: active state must be changed via
+      // the dedicated /activate and /deactivate routes so the audit log is populated.
       const { is_active: _ia, ...changes } = data;
       const updated = await updateThreshold(editTarget.id, changes);
       setThresholds(prev => prev.map(t => t.id === updated.id ? updated : t));
@@ -61,6 +107,8 @@ export default function ThresholdsPage() {
   }
 
   async function handleToggle(t: Threshold) {
+    // The backend returns the updated threshold so the UI reflects the DB value
+    // rather than optimistically flipping the local flag.
     const updated = t.is_active
       ? await deactivateThreshold(t.id)
       : await activateThreshold(t.id);
@@ -69,6 +117,7 @@ export default function ThresholdsPage() {
 
   async function handleDelete(id: number) {
     await deleteThreshold(id);
+    // Remove optimistically — a failure would have thrown and the row stays.
     setThresholds(prev => prev.filter(t => t.id !== id));
   }
 
@@ -78,7 +127,7 @@ export default function ThresholdsPage() {
   }
 
   function openCreate() {
-    setEditTarget(null);
+    setEditTarget(null); // ensure form starts blank, not pre-populated
     setShowForm(true);
   }
 
@@ -88,12 +137,16 @@ export default function ThresholdsPage() {
   }
 
   // ── Zone-map click syncs with table filter ───────────────────────────────────
+  // Clicking a zone on the map filters the table to that zone. Clicking the
+  // same zone again deselects it (zone === selectedZone → empty string clears filter).
   function handleZoneClick(zone: string) {
     setSelectedZone(zone || null);
     setFilter(f => ({ ...f, zone: zone }));
   }
 
   // ── Derived filtered list ────────────────────────────────────────────────────
+  // Computed inline so no stale state is possible. The filter short-circuits
+  // on the first failing condition to keep iteration fast for large lists.
   const visible = thresholds.filter(t => {
     if (filter.zone   && t.zone   !== filter.zone)   return false;
     if (filter.metric && t.metric !== filter.metric)  return false;
@@ -103,9 +156,13 @@ export default function ThresholdsPage() {
   });
 
   // ── Stats ────────────────────────────────────────────────────────────────────
+  // All stats are derived from the full (unfiltered) thresholds array so the
+  // numbers always reflect the system-wide state, not the current filter view.
   const totalActive   = thresholds.filter(t => t.is_active).length;
   const totalCritical = thresholds.filter(t => t.severity === 'critical').length;
 
+  // Unique zone / metric lists power the filter dropdowns and show only values
+  // that actually exist in the current data, avoiding dead filter options.
   const uniqueZones   = [...new Set(thresholds.map(t => t.zone))].sort();
   const uniqueMetrics = [...new Set(thresholds.map(t => t.metric))].sort();
 
@@ -128,6 +185,7 @@ export default function ThresholdsPage() {
           <div className="flex items-center gap-3">
             <span className="hidden sm:block text-sm text-slate-300">
               {account?.name}
+              {/* Clearance badge colour distinguishes admin from operator at a glance */}
               <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full font-medium
                 ${isAdmin ? 'bg-blue-700 text-blue-100' : 'bg-slate-700 text-slate-300'}`}>
                 {account?.clearance}
@@ -145,7 +203,9 @@ export default function ThresholdsPage() {
 
       <main className="flex-1 max-w-screen-xl mx-auto w-full px-6 py-6 space-y-6">
 
-        {/* ── ADMIN gate banner ──────────────────────────────────────────────── */}
+        {/* ── OPERATOR read-only banner ───────────────────────────────────────
+            Shown proactively so operators understand why they cannot see the
+            "New rule" button or toggle switches before they go looking for them. */}
         {!isAdmin && (
           <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-3 text-sm text-amber-800">
             <svg className="w-5 h-5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -172,6 +232,13 @@ export default function ThresholdsPage() {
 
         {/* ── Map + Chart row ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/*
+            `isolate` creates a new CSS stacking context for this card.
+            Leaflet sets its own internal z-indices up to ~700 on map layers.
+            Without isolation, those indices leak out and overlap the modal
+            (z-[1000]) when it is opened. isolate keeps all Leaflet layers
+            contained within this card's stacking context.
+          */}
           <div className="card overflow-hidden isolate">
             <div className="px-4 pt-4 pb-2">
               <h2 className="text-sm font-semibold text-gray-700">Zone Map</h2>
@@ -197,15 +264,16 @@ export default function ThresholdsPage() {
 
         {/* ── Table card ──────────────────────────────────────────────────────── */}
         <div className="card">
-          {/* Card header */}
+          {/* Card header with filter controls and (admin-only) create button */}
           <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-3 justify-between">
             <h2 className="font-semibold text-gray-800">
               Threshold Rules
+              {/* Show filtered count so users know when a filter is narrowing the view */}
               <span className="ml-2 text-sm font-normal text-gray-400">{visible.length} shown</span>
             </h2>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* Zone filter */}
+              {/* Zone filter — changing this also moves the map highlight */}
               <select
                 value={filter.zone}
                 onChange={e => { setFilter(f => ({ ...f, zone: e.target.value })); setSelectedZone(e.target.value || null); }}
@@ -236,7 +304,7 @@ export default function ThresholdsPage() {
                 <option value="inactive">Inactive</option>
               </select>
 
-              {/* Clear filters */}
+              {/* Show "Clear" only when at least one filter is active */}
               {(filter.zone || filter.metric || filter.status !== 'all') && (
                 <button
                   onClick={() => { setFilter({ zone: '', metric: '', status: 'all' }); setSelectedZone(null); }}
@@ -246,7 +314,7 @@ export default function ThresholdsPage() {
                 </button>
               )}
 
-              {/* Reload */}
+              {/* Manual refresh — useful when the evaluator has just fired */}
               <button
                 onClick={() => void reload()}
                 className="btn-ghost p-1.5"
@@ -258,7 +326,7 @@ export default function ThresholdsPage() {
                 </svg>
               </button>
 
-              {/* Create button — admin only */}
+              {/* Create button is admin-only; operators see the table but not this button */}
               {isAdmin && (
                 <button onClick={openCreate} className="btn-primary">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -270,7 +338,7 @@ export default function ThresholdsPage() {
             </div>
           </div>
 
-          {/* Error / loading / table */}
+          {/* Loading spinner — shown until the first fetch resolves */}
           {loading && (
             <div className="flex items-center justify-center py-16 gap-2 text-gray-400">
               <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
@@ -281,6 +349,7 @@ export default function ThresholdsPage() {
             </div>
           )}
 
+          {/* Fetch error — shown with a retry link rather than an error boundary */}
           {!loading && fetchError && (
             <div className="px-4 py-4 text-sm text-red-600 bg-red-50 border-t border-red-100">
               {fetchError}
@@ -288,6 +357,7 @@ export default function ThresholdsPage() {
             </div>
           )}
 
+          {/* Table is rendered only after a successful load */}
           {!loading && !fetchError && (
             <ThresholdTable
               thresholds={visible}
@@ -300,7 +370,8 @@ export default function ThresholdsPage() {
         </div>
       </main>
 
-      {/* Form modal */}
+      {/* Form modal — rendered as a portal sibling to main so the z-index stack
+          is relative to the root rather than to the card's stacking context. */}
       {showForm && (
         <ThresholdFormModal
           initial={editTarget}

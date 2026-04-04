@@ -1,3 +1,25 @@
+/**
+ * Login page — the single entry point for all users.
+ *
+ * Flow:
+ *  1. User submits email + password.
+ *  2. We POST to /account/login (see api/auth.ts).
+ *  3. On success the backend returns the account profile and a signed JWT.
+ *  4. signIn() writes both to AuthContext (and to localStorage for persistence).
+ *  5. We navigate to /thresholds; RequireAuth in App.tsx will permit entry.
+ *
+ * Error handling:
+ *  - A 401 from the backend returns a FastAPI detail string which we surface
+ *    directly ("email or password incorrect, or account inactive").
+ *  - A network failure (Docker not running, wrong port) shows a generic
+ *    "Could not connect to the server" message rather than an axios stack trace.
+ *  - identity_verified being false with a 200 response is a defensive check;
+ *    the current backend always raises 401 on failure rather than returning false,
+ *    but we handle both to stay robust against future changes.
+ *
+ * Demo credentials are shown in plain text at the bottom of the card because
+ * this is a prototype demo, not a production deployment.
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api/auth';
@@ -17,14 +39,20 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
+      // Trim whitespace from the email — a common source of "wrong password"
+      // errors when users copy-paste the demo credentials with trailing spaces.
       const res = await login(email.trim(), password);
       if (!res.identity_verified) {
         setError('Login failed. Check your credentials.');
         return;
       }
+      // access_token may be null if JWT_SECRET is not set in the backend env.
+      // In that case signIn stores null, setAuthToken is skipped, and the user
+      // will hit 401 on the first protected API call (triggering a sign-out).
       signIn(res.account, res.access_token ?? null);
       navigate('/thresholds', { replace: true });
     } catch (err: unknown) {
+      // Prefer the FastAPI detail string; fall back to a generic message.
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
         'Could not connect to the server.';
@@ -108,6 +136,7 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Demo credentials hint — intentionally visible for presentation purposes */}
           <p className="mt-6 text-xs text-center text-gray-400">
             Demo — Admin: <span className="font-mono">admin@demo.com / admin123</span>
           </p>

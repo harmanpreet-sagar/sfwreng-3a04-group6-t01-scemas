@@ -1,3 +1,32 @@
+/**
+ * ThresholdFormModal — modal dialog for creating and editing threshold rules.
+ *
+ * Dual-mode design:
+ *  - When `initial` is null/undefined, the form opens blank and calls
+ *    POST /threshold on submit (create mode).
+ *  - When `initial` is a full Threshold object, the form pre-populates its
+ *    fields and calls PATCH /threshold/{id} on submit (edit mode).
+ *  The parent (ThresholdsPage) decides which mode applies by setting editTarget.
+ *
+ * is_active handling:
+ *  The form includes an is_active toggle so a rule can be created as inactive
+ *  from the start. However, when in edit mode, the ThresholdsPage handleSave
+ *  strips is_active before sending the PATCH body — active state changes must
+ *  go through /activate or /deactivate to preserve the audit log. The toggle
+ *  is still shown in edit mode because it provides visual feedback about the
+ *  current state of the rule the user is editing.
+ *
+ * z-index:
+ *  The modal root uses z-[1000] to ensure it renders above Leaflet map tiles.
+ *  Leaflet internally uses z-indices up to ~700; the parent card wrapping the
+ *  map uses `isolate` (ThresholdsPage) to contain those, but the modal is
+ *  mounted at the root level and must still be above anything on the page.
+ *
+ * Error surfacing:
+ *  Backend validation errors (e.g. unknown zone, threshold_value out of range)
+ *  arrive as a FastAPI `detail` string in the 422 response body. We extract
+ *  and display that string directly rather than showing a generic message.
+ */
 import { useEffect, useState } from 'react';
 import type { Condition, Severity, Threshold, ThresholdCreate } from '../types';
 import { CONDITIONS, KNOWN_METRICS, KNOWN_ZONES, SEVERITIES } from '../types';
@@ -8,6 +37,8 @@ interface Props {
   onClose: () => void;
 }
 
+// Default form values for the create path — chosen to be sensible starting points:
+// 'gt' and 'medium' are the most common new-rule configuration.
 const EMPTY: ThresholdCreate = {
   zone:            '',
   metric:          '',
@@ -20,10 +51,14 @@ const EMPTY: ThresholdCreate = {
 export default function ThresholdFormModal({ initial, onSave, onClose }: Props) {
   const isEdit = !!initial;
 
-  const [form,    setForm]    = useState<ThresholdCreate>(EMPTY);
-  const [error,   setError]   = useState<string | null>(null);
-  const [saving,  setSaving]  = useState(false);
+  const [form,   setForm]   = useState<ThresholdCreate>(EMPTY);
+  const [error,  setError]  = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
+  // Re-populate the form whenever the target threshold changes.
+  // This handles the edge case where the user edits rule A, closes the modal,
+  // then immediately edits rule B — without this effect the form would still
+  // show rule A's values.
   useEffect(() => {
     if (initial) {
       setForm({
@@ -39,12 +74,14 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
     }
   }, [initial]);
 
+  // Generic setter that merges a single field update without mutating the rest.
   function set<K extends keyof ThresholdCreate>(key: K, value: ThresholdCreate[K]) {
     setForm(prev => ({ ...prev, [key]: value }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Frontend validation for the most likely user error before hitting the API.
     if (!form.zone.trim() || !form.metric.trim()) {
       setError('Zone and metric are required.');
       return;
@@ -53,8 +90,11 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
     setSaving(true);
     try {
       await onSave(form);
-      onClose();
+      onClose(); // close only on success so the user sees errors without losing their input
     } catch (err: unknown) {
+      // FastAPI returns validation errors as a `detail` field (string or list).
+      // We only handle string details here; list details (422 field errors) fall
+      // back to the generic message.
       const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
       setError(typeof detail === 'string' ? detail : 'Save failed. Check your input.');
     } finally {
@@ -63,11 +103,16 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
   }
 
   return (
+    /*
+      z-[1000]: must be above Leaflet map tiles (internal z-index up to ~700)
+      and above the `isolate` stacking context of the map card.
+      See ThresholdsPage for the `isolate` explanation.
+    */
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Semi-transparent backdrop — clicking it closes the modal */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
+      {/* Modal panel — uses relative z-10 to sit above the absolute backdrop */}
       <div className="relative z-10 w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -81,7 +126,8 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
           </button>
         </div>
 
-        {/* Body */}
+        {/* Scrollable form body — max-h-[90vh] on the parent prevents it from going off-screen
+            on small displays; overflow-y-auto lets users scroll inside the modal instead. */}
         <form id="threshold-form" onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">
@@ -89,7 +135,9 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
             </div>
           )}
 
-          {/* Zone */}
+          {/* Zone — dropdown populated from KNOWN_ZONES in types/index.ts.
+              These match the zones the simulator publishes to, ensuring the frontend
+              and backend share the same set of valid zone identifiers. */}
           <div>
             <label className="label" htmlFor="zone">Zone</label>
             <select
@@ -106,7 +154,8 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
             </select>
           </div>
 
-          {/* Metric */}
+          {/* Metric — dropdown populated from KNOWN_METRICS in types/index.ts.
+              These match VALID_RANGES in the backend's validation_service.py. */}
           <div>
             <label className="label" htmlFor="metric">Metric</label>
             <select
@@ -123,7 +172,8 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
             </select>
           </div>
 
-          {/* Condition + Value */}
+          {/* Condition + Value in a two-column grid so the logical unit "≥ 150"
+              stays visually grouped rather than split across separate rows. */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label" htmlFor="condition">Condition</label>
@@ -142,6 +192,7 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
 
             <div>
               <label className="label" htmlFor="threshold_value">Threshold Value</label>
+              {/* step="any" allows decimal values (e.g. temperature = 36.5) */}
               <input
                 id="threshold_value"
                 type="number"
@@ -154,7 +205,8 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
             </div>
           </div>
 
-          {/* Severity */}
+          {/* Severity — pill buttons rather than a dropdown so the colour coding
+              is visible during selection, making the choice more intuitive. */}
           <div>
             <label className="label">Severity</label>
             <div className="flex gap-2 flex-wrap">
@@ -181,7 +233,9 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
             </div>
           </div>
 
-          {/* Active toggle */}
+          {/* Active toggle — shown in both create and edit mode.
+              In edit mode the parent strips is_active before PATCH so this only
+              affects the CREATE path (the initial active state of a new rule). */}
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -203,7 +257,10 @@ export default function ThresholdFormModal({ initial, onSave, onClose }: Props) 
           </div>
         </form>
 
-        {/* Footer */}
+        {/* Footer with cancel and submit.
+            Submit uses form="threshold-form" to trigger the form's onSubmit from
+            outside the <form> element — necessary because the form is in the
+            scrollable body while the button is in the sticky footer. */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
           <button

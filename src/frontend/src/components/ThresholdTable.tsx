@@ -1,8 +1,30 @@
+/**
+ * ThresholdTable — displays the filtered list of threshold rules.
+ *
+ * Responsibilities:
+ *  - Render a responsive table of threshold rows with severity badges.
+ *  - For ADMIN users: show an active/inactive toggle switch per row,
+ *    and Edit / Delete action buttons.
+ *  - For OPERATOR users: show a read-only status badge; no action column.
+ *  - Guard the delete action behind a ConfirmDialog to prevent accidental
+ *    permanent deletion.
+ *  - Track in-flight toggle and delete requests per row so the appropriate
+ *    button shows a disabled state while waiting — prevents double-submit.
+ *
+ * The component is purely presentational: it calls onToggle / onDelete
+ * callbacks and lets ThresholdsPage own the actual API calls and state updates.
+ * This separation means the table can be tested in isolation with mock handlers.
+ *
+ * The `pendingDelete` state stores the full Threshold object (not just its id)
+ * so the ConfirmDialog can display a meaningful human-readable description of
+ * exactly which rule will be removed (zone, metric, condition, value).
+ */
 import { useState } from 'react';
 import type { Threshold } from '../types';
 import SeverityBadge from './SeverityBadge';
 import ConfirmDialog from './ConfirmDialog';
 
+// Human-readable operator symbols for the rule column (e.g. "gte" → "≥ 50")
 const CONDITION_LABEL: Record<string, string> = {
   gt:  '>',
   gte: '≥',
@@ -14,14 +36,17 @@ const CONDITION_LABEL: Record<string, string> = {
 interface Props {
   thresholds: Threshold[];
   isAdmin: boolean;
-  onEdit:       (t: Threshold) => void;
-  onToggle:     (t: Threshold) => Promise<void>;
-  onDelete:     (id: number)   => Promise<void>;
+  onEdit:   (t: Threshold) => void;
+  onToggle: (t: Threshold) => Promise<void>;
+  onDelete: (id: number)   => Promise<void>;
 }
 
 export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, onDelete }: Props) {
+  // null means no delete is in progress; non-null means the confirm dialog is open for that row.
   const [pendingDelete, setPendingDelete] = useState<Threshold | null>(null);
+  // Track which row's toggle is in-flight so we can disable it until the request completes.
   const [togglingId,    setTogglingId]    = useState<number | null>(null);
+  // Track which row's delete is in-flight (after confirmation) to disable repeated clicks.
   const [deletingId,    setDeletingId]    = useState<number | null>(null);
 
   async function handleToggle(t: Threshold) {
@@ -32,12 +57,17 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
   async function handleDelete() {
     if (!pendingDelete) return;
     setDeletingId(pendingDelete.id);
-    try { await onDelete(pendingDelete.id); } finally {
+    try {
+      await onDelete(pendingDelete.id);
+    } finally {
+      // Always clear state — even on error — so the dialog doesn't get stuck open.
       setDeletingId(null);
       setPendingDelete(null);
     }
   }
 
+  // Empty state — shown when there are no rules matching the current filter,
+  // or when the database has no thresholds at all.
   if (thresholds.length === 0) {
     return (
       <div className="text-center py-16 text-gray-400">
@@ -63,6 +93,7 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
               <th className="px-4 py-3">Rule</th>
               <th className="px-4 py-3">Severity</th>
               <th className="px-4 py-3">Status</th>
+              {/* Actions column is hidden entirely for operators to reduce visual clutter */}
               {isAdmin && <th className="px-4 py-3 text-right">Actions</th>}
             </tr>
           </thead>
@@ -80,6 +111,7 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
 
                 <td className="px-4 py-3 capitalize text-gray-700">{t.metric}</td>
 
+                {/* "Rule" column renders the threshold as a readable expression, e.g. "≥ 150" */}
                 <td className="px-4 py-3 font-mono text-gray-800">
                   {CONDITION_LABEL[t.condition] ?? t.condition}{' '}
                   <span className="font-semibold">{t.threshold_value}</span>
@@ -91,7 +123,11 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
 
                 <td className="px-4 py-3">
                   {isAdmin ? (
-                    /* Toggle switch */
+                    /*
+                      Toggle switch uses role="switch" + aria-checked for accessibility.
+                      Disabled while a toggle request is in-flight (togglingId === t.id)
+                      to prevent duplicate PATCH calls to /activate or /deactivate.
+                    */
                     <button
                       role="switch"
                       aria-checked={t.is_active}
@@ -107,6 +143,8 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
                       />
                     </button>
                   ) : (
+                    // Operators see a static badge — the toggle switch is not rendered at all,
+                    // not just disabled, so there is no ambiguity about whether they can interact.
                     <span className={`badge ${t.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
                       {t.is_active ? 'Active' : 'Inactive'}
                     </span>
@@ -116,7 +154,7 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
                 {isAdmin && (
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      {/* Edit */}
+                      {/* Edit opens the form modal pre-populated with this row's values */}
                       <button
                         onClick={() => onEdit(t)}
                         className="btn-ghost p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
@@ -128,7 +166,8 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
                         </svg>
                       </button>
 
-                      {/* Delete */}
+                      {/* Delete sets pendingDelete to open ConfirmDialog; the actual DELETE
+                          request only fires after the user confirms in the dialog. */}
                       <button
                         onClick={() => setPendingDelete(t)}
                         disabled={deletingId === t.id}
@@ -149,6 +188,8 @@ export default function ThresholdTable({ thresholds, isAdmin, onEdit, onToggle, 
         </table>
       </div>
 
+      {/* ConfirmDialog is rendered outside the table so it doesn't inherit the
+          table's overflow:hidden and can fill the screen correctly. */}
       {pendingDelete && (
         <ConfirmDialog
           title="Delete threshold?"

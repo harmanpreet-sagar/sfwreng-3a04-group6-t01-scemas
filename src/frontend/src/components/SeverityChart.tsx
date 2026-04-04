@@ -1,3 +1,32 @@
+/**
+ * SeverityChart — stacked bar chart showing active threshold counts by metric
+ * and severity, built with Recharts.
+ *
+ * Why stacked bars:
+ *  A single bar per metric would show only the total count, hiding whether
+ *  those rules are mostly low-risk or mostly critical. Stacking by severity
+ *  lets operators see the risk composition at a glance — a metric with many
+ *  critical segments needs attention even if its total count is low.
+ *
+ * Data pipeline:
+ *  buildChartData groups ACTIVE thresholds (is_active === true) by metric,
+ *  then counts how many rules exist at each severity level. Inactive thresholds
+ *  are excluded because they do not affect the evaluator and should not inflate
+ *  the visual weight of a metric.
+ *
+ * Colour consistency:
+ *  SEVERITY_COLOUR values here intentionally match those in ZoneMap.tsx and
+ *  SeverityBadge.tsx. If the severity palette changes, update all three files.
+ *
+ * Recharts note:
+ *  stackId="a" on every Bar tells Recharts to group them into a single stack
+ *  per x-axis value. Using different stackId values would produce grouped
+ *  (side-by-side) bars instead.
+ *
+ *  The top-most bar (critical) gets a corner radius of [3,3,0,0] so the whole
+ *  stack has rounded top corners. Other bars use [0,0,0,0] to avoid gaps
+ *  between stacked segments.
+ */
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, Cell,
@@ -11,6 +40,8 @@ const SEVERITY_COLOUR: Record<Severity, string> = {
   critical: '#ef4444',
 };
 
+// Fixed order ensures the stack always renders low → critical bottom to top,
+// making it easy to visually compare severity distribution across metrics.
 const SEVERITIES: Severity[] = ['low', 'medium', 'high', 'critical'];
 
 interface ChartRow {
@@ -21,6 +52,10 @@ interface ChartRow {
   critical: number;
 }
 
+/**
+ * Transform the flat threshold list into one row per metric with per-severity counts.
+ * Only active thresholds are counted — inactive rules do not affect the evaluator.
+ */
 function buildChartData(thresholds: Threshold[]): ChartRow[] {
   const metrics = [...new Set(thresholds.map(t => t.metric))].sort();
   return metrics.map(metric => {
@@ -35,6 +70,7 @@ function buildChartData(thresholds: Threshold[]): ChartRow[] {
 export default function SeverityChart({ thresholds }: { thresholds: Threshold[] }) {
   const data = buildChartData(thresholds);
 
+  // Empty state for when no thresholds exist or all are inactive
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400 text-sm">
@@ -54,6 +90,7 @@ export default function SeverityChart({ thresholds }: { thresholds: Threshold[] 
           axisLine={false}
           className="capitalize"
         />
+        {/* allowDecimals=false because threshold counts are always whole numbers */}
         <YAxis
           allowDecimals={false}
           tick={{ fontSize: 11, fill: '#64748b' }}
@@ -70,7 +107,14 @@ export default function SeverityChart({ thresholds }: { thresholds: Threshold[] 
           wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
         />
         {SEVERITIES.map(s => (
-          <Bar key={s} dataKey={s} name={s} stackId="a" radius={s === 'critical' ? [3, 3, 0, 0] : [0, 0, 0, 0]}>
+          <Bar
+            key={s}
+            dataKey={s}
+            name={s}
+            stackId="a"
+            // Only the top segment gets rounded corners to avoid visual gaps between segments
+            radius={s === 'critical' ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+          >
             {data.map((_, i) => (
               <Cell key={i} fill={SEVERITY_COLOUR[s]} />
             ))}
