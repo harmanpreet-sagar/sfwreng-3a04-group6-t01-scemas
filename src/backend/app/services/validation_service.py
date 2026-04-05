@@ -33,7 +33,6 @@ Processes incoming sensor readings through three sequential steps:
 
 
 
-
 import os
 from datetime import datetime, timezone, timedelta
 from statistics import mean, stdev

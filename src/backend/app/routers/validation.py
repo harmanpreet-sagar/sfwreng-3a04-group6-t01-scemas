@@ -7,14 +7,9 @@ Exposes two endpoints for monitoring the health of the data ingestion pipeline:
   as a pipeline health indicator.
 - GET /validation/events: returns the 50 most recent validation events
   with their status and reason. Accessible to OPERATOR and ADMIN roles.
-"""
 
-
-
-from fastapi import APIRouter
-from datetime import datetime, timezone, timedelta
-import asyncpg
-import os
+Ported from asyncpg to psycopg so the project uses a single DB driver.
+asyncpg used $1/$2 placeholders; psycopg uses %s.
 
 Requires DB migration: db/migrations/005_create_validation_events.sql
 """
