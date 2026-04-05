@@ -32,7 +32,6 @@ Processes incoming sensor readings through three sequential steps:
 
 
 
-"""
 
 
 import os
