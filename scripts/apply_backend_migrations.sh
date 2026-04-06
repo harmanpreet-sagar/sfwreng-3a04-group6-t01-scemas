@@ -27,8 +27,7 @@ if ! command -v psql >/dev/null 2>&1; then
   exit 1
 fi
 
-for f in "$MIG_DIR"/001_*.sql "$MIG_DIR"/002_*.sql "$MIG_DIR"/003_*.sql "$MIG_DIR"/004_*.sql; do
-  [[ -f "$f" ]] || continue
+find "$MIG_DIR" -maxdepth 1 -type f -name '*.sql' | sort | while read -r f; do
   echo "Applying $(basename "$f")..."
   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f "$f"
 done
