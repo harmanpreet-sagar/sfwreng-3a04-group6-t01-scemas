@@ -1,76 +1,159 @@
-"""Read-only aggregation endpoints for dashboard charts and maps."""
+"""Alert endpoints: read list/detail and lifecycle (acknowledge / resolve).
+
+Simple explanation: The website doors for alerts—list them, filter them, watch a live
+stream of changes, and buttons to say “I saw it” or “it is fixed.”
+
+RBAC (aligned with thresholds / SRS):
+  All routes — OPERATOR + ADMIN (JWT Bearer). Unauthenticated callers get 401.
+
+SSE note: Browsers' EventSource cannot set Authorization headers. The dashboard should
+connect with fetch() + ReadableStream, or another client that can send Bearer tokens.
+"""
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 
-from app.services.aggregation_service import (
-    get_latest_zone_aggregates,
-    get_zone_metric_history,
-    list_latest_zone_aggregates,
-)
-from app.shared.aggregation import (
-    AggregationHistoryResponse,
-    AggregationZoneSummary,
-    AggregationZonesResponse,
-)
+from app.shared.alert import AlertListResponse, AlertResponse
+from app.shared.alert_sse_broadcaster import alert_sse_broadcaster
 from app.shared.auth import CurrentUser, require_operator_or_admin
+from app.shared.enums import AlertSeverity, AlertStatus
+from app.services.alert_service import AlertService
 
-router = APIRouter(prefix="/aggregation", tags=["Aggregation"])
+router = APIRouter(prefix="/alerts", tags=["Alerts"])
+
+_NOT_FOUND_DETAIL = "No alert with this id"
 
 
-@router.get("/zones", response_model=AggregationZonesResponse)
-def get_aggregation_zones(
+@router.get("", response_model=AlertListResponse)
+def get_alerts(
+    status: Optional[AlertStatus] = Query(
+        None, description="Filter by lifecycle status"
+    ),
+    zone: Optional[str] = Query(
+        None, description="Exact match on zone", min_length=1
+    ),
+    severity: Optional[AlertSeverity] = Query(
+        None, description="Filter by severity"
+    ),
     _user: CurrentUser = Depends(require_operator_or_admin),
-) -> AggregationZonesResponse:
-    rows = list_latest_zone_aggregates()
-    return AggregationZonesResponse(zones=rows, total=len(rows))
+) -> AlertListResponse:
+    rows = AlertService.list_alerts(status=status, zone=zone, severity=severity)
+    return AlertListResponse(alerts=rows, total=len(rows))
 
 
-@router.get("/zones/{zone}", response_model=AggregationZoneSummary)
-def get_aggregation_zone(
-    zone: Annotated[str, Path(..., min_length=1, max_length=256)],
+@router.get("/stream")
+async def alert_event_stream(
+    request: Request,
     _user: CurrentUser = Depends(require_operator_or_admin),
-) -> AggregationZoneSummary:
-    zone_clean = zone.strip()
-    summary = get_latest_zone_aggregates(zone_clean)
+) -> StreamingResponse:
+    """Server-Sent Events stream of new/updated alerts (in-memory PoC)."""
+    return StreamingResponse(
+        alert_sse_broadcaster.stream(request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
-    if summary is None:
+
+@router.patch("/{alert_id}/acknowledge", response_model=AlertResponse)
+def acknowledge_alert(
+    alert_id: int,
+    _user: CurrentUser = Depends(require_operator_or_admin),
+) -> AlertResponse:
+    outcome = AlertService.acknowledge_alert(alert_id)
+    if outcome.alert is not None:
+        return outcome.alert
+    if outcome.not_found:
         raise HTTPException(
             status_code=404,
             detail={
-                "error": "zone_not_found",
-                "message": "No aggregated data exists for this zone.",
-                "zone": zone_clean,
+                "error": "alert_not_found",
+                "message": _NOT_FOUND_DETAIL,
+                "alert_id": alert_id,
             },
         )
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "error": "invalid_state_transition",
+            "message": "Only alerts with status 'active' can be acknowledged.",
+            "alert_id": alert_id,
+            "current_status": outcome.current_status,
+            "allowed_from": ["active"],
+        },
+    )
 
-    return summary
 
-
-@router.get("/zones/{zone}/history", response_model=AggregationHistoryResponse)
-def get_aggregation_zone_history(
-    zone: Annotated[str, Path(..., min_length=1, max_length=256)],
-    metric: Annotated[str, Query(..., min_length=1)],
-    limit: Annotated[int, Query(ge=1, le=500)] = 50,
+@router.patch("/{alert_id}/resolve", response_model=AlertResponse)
+def resolve_alert(
+    alert_id: int,
     _user: CurrentUser = Depends(require_operator_or_admin),
-) -> AggregationHistoryResponse:
-    zone_clean = zone.strip()
-    metric_clean = metric.strip()
-
-    history = get_zone_metric_history(zone_clean, metric_clean, limit=limit)
-
-    if history is None:
+) -> AlertResponse:
+    outcome = AlertService.resolve_alert(alert_id)
+    if outcome.alert is not None:
+        return outcome.alert
+    if outcome.not_found:
         raise HTTPException(
             status_code=404,
             detail={
-                "error": "aggregation_not_found",
-                "message": "No aggregation history found.",
-                "zone": zone_clean,
-                "metric": metric_clean,
+                "error": "alert_not_found",
+                "message": _NOT_FOUND_DETAIL,
+                "alert_id": alert_id,
             },
         )
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "error": "invalid_state_transition",
+            "message": (
+                "Only alerts with status 'active' or 'acknowledged' can be resolved."
+            ),
+            "alert_id": alert_id,
+            "current_status": outcome.current_status,
+            "allowed_from": ["active", "acknowledged"],
+        },
+    )
 
-    return history
+
+@router.get(
+    "/{alert_id}",
+    response_model=AlertResponse,
+    responses={
+        404: {
+            "description": "Alert not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "error": "alert_not_found",
+                            "message": "No alert with this id",
+                            "alert_id": 0,
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+def get_alert(
+    alert_id: int,
+    _user: CurrentUser = Depends(require_operator_or_admin),
+) -> AlertResponse:
+    alert = AlertService.get_alert_by_id(alert_id)
+    if alert is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": "alert_not_found",
+                "message": _NOT_FOUND_DETAIL,
+                "alert_id": alert_id,
+            },
+        )
+    return alert

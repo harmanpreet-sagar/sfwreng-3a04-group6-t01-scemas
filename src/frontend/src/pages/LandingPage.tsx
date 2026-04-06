@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PublicLandingMap from '../components/PublicLandingMap';
+import PublicZoneStatusCards from '../components/PublicZoneStatusCards';
 import { ScemasLogoMark } from '../components/ScemasLogoMark';
 import {
   fetchPublicZones,
@@ -233,6 +234,17 @@ export default function LandingPage() {
                   </Link>
                 </div>
               </aside>
+            </div>
+
+            <div className="mt-10">
+              <p className="section-title">Public summary</p>
+              <h3 className="font-display mt-2 text-2xl font-bold text-ink-950">Zone status cards</h3>
+              <p className="mt-2 max-w-2xl text-sm text-ink-600">
+                Each card shows the current AQI label and latest public metric values for one zone.
+              </p>
+              <div className="mt-6">
+                <PublicZoneStatusCards zones={publicZones} />
+              </div>
             </div>
           </div>
         </section>

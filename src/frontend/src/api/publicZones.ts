@@ -8,7 +8,12 @@ import axios from 'axios';
 import { KNOWN_ZONES } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-const PUBLIC_KEY = (import.meta.env.VITE_PUBLIC_DEMO_API_KEY ?? '').trim();
+// Keep the frontend aligned with the backend's default demo public key
+// so the landing page can still load live public summaries in dev even if
+// VITE_PUBLIC_DEMO_API_KEY is omitted from the environment.
+const DEFAULT_PUBLIC_KEY = 'scemas-demo-public-api-key';
+const envPublicKey = (import.meta.env.VITE_PUBLIC_DEMO_API_KEY ?? '').trim();
+const PUBLIC_KEY = envPublicKey || DEFAULT_PUBLIC_KEY;
 
 export type PublicOperationalStatus = 'normal' | 'alerting';
 

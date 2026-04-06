@@ -2,21 +2,18 @@
  * Public-facing zone map for the marketing landing page.
  * Uses /public/zones data when VITE_PUBLIC_DEMO_API_KEY is set; otherwise shows coverage only.
  */
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip } from 'react-leaflet';
 import { CAMPUS_CENTER, ZONE_COORDS } from '../constants/zoneMap';
 import '../map/leafletDefaultIcon';
 import type { PublicZoneSummary } from '../api/publicZones';
 import { staticZoneIds } from '../api/publicZones';
-
-const SEVERITY_FILL: Record<string, string> = {
-  low: '#22c55e',
-  medium: '#0ea5e9',
-  high: '#f97316',
-  critical: '#ef4444',
-};
-
-const NEUTRAL = '#94a3b8';
-const NORMAL_OK = '#14b8a6';
+import { KNOWN_METRICS } from '../types';
+import {
+  averageMetricQualityScore,
+  averageMetricQualityTone,
+  getMetricQualityLabel,
+  getMetricQualityTone,
+} from '../lib/aqi';
 
 interface Props {
   /** Live summaries from public API, or null to show static coverage */
@@ -24,7 +21,7 @@ interface Props {
 }
 
 export default function PublicLandingMap({ zones }: Props) {
-  const byZone = zones ? Object.fromEntries(zones.map(z => [z.zone, z])) : null;
+  const byZone = zones ? Object.fromEntries(zones.map(z => [z.zone, z])) : {};
   const ids = zones && zones.length > 0 ? zones.map(z => z.zone) : staticZoneIds();
 
   return (
@@ -42,21 +39,21 @@ export default function PublicLandingMap({ zones }: Props) {
       {ids.map(zoneId => {
         const coords = ZONE_COORDS[zoneId];
         if (!coords) return null;
-        const row = byZone?.[zoneId];
-        let fill = NEUTRAL;
-        let subtitle = 'Monitoring coverage';
-        if (row) {
-          if (row.status === 'alerting' && row.active_alert_highest_severity) {
-            fill = SEVERITY_FILL[row.active_alert_highest_severity] ?? NEUTRAL;
-            subtitle = `Alerting · ${row.active_alert_highest_severity}`;
-          } else {
-            fill = NORMAL_OK;
-            subtitle = 'Normal';
-          }
-          if (row.metrics.length) {
-            subtitle += ` · ${row.metrics.length} metric${row.metrics.length === 1 ? '' : 's'}`;
-          }
-        }
+        const row = byZone[zoneId];
+        const averageScore = averageMetricQualityScore(
+          KNOWN_METRICS.map(metric => ({
+            metric,
+            value: row?.metrics.find(m => m.metric === metric)?.value ?? null,
+          })),
+        );
+        const fill = averageMetricQualityTone(averageScore);
+        const subtitle = averageScore == null
+          ? 'Awaiting live summary'
+          : averageScore >= 1.5
+            ? 'Mostly good'
+            : averageScore >= 0.75
+              ? 'Mixed / average'
+              : 'Mostly poor';
 
         return (
           <CircleMarker
@@ -74,6 +71,35 @@ export default function PublicLandingMap({ zones }: Props) {
               <div className="text-xs font-semibold text-slate-800">{zoneId}</div>
               <div className="text-[11px] text-slate-600">{subtitle}</div>
             </Tooltip>
+            <Popup>
+              <div className="min-w-[180px] space-y-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Zone</p>
+                  <p className="font-bold text-slate-900">{zoneId}</p>
+                  <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+                </div>
+                <div className="space-y-1.5">
+                  {KNOWN_METRICS.map(metric => {
+                    const value = row?.metrics.find(m => m.metric === metric)?.value ?? null;
+                    return (
+                      <div key={metric} className="flex items-center justify-between rounded-lg bg-slate-50 px-2.5 py-1.5">
+                        <div>
+                          <span className="text-xs font-medium capitalize text-slate-700">{metric}</span>
+                          <div className="mt-1">
+                            <span className={`badge ring-1 ${getMetricQualityTone(metric, value)}`}>
+                              {getMetricQualityLabel(metric, value)}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-mono font-semibold text-slate-900">
+                          {value == null ? '—' : value.toFixed(1)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Popup>
           </CircleMarker>
         );
       })}

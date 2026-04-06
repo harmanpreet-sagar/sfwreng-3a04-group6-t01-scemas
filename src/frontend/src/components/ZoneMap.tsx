@@ -1,89 +1,57 @@
 /**
- * ZoneMap — Leaflet-based interactive map showing monitoring zones.
- *
- * Each zone is rendered as a CircleMarker centred on its real-world campus
- * coordinates. The marker colour reflects the worst active threshold severity
- * in that zone (critical → red, high → orange, medium → sky blue, low → green,
- * none → slate). This gives operators an instant spatial overview without
- * reading the table.
- *
- * Zone → coordinate mapping:
- *  ZONE_COORDS is hardcoded to McMaster University / Hamilton ON campus
- *  coordinates. If new zones are added to KNOWN_ZONES in types/index.ts,
- *  a corresponding entry must be added here, otherwise those zones won't
- *  appear on the map.
- *
- * Click interaction:
- *  Clicking a marker calls onZoneClick(zone), which ThresholdsPage uses to
- *  update the table filter. Clicking the same zone again passes an empty string
- *  to act as a deselect/clear. The selected zone is visually distinguished by a
- *  larger radius and a darker blue border.
- *
- * Leaflet + Vite asset handling:
- *  Vite's module bundler hashes file names at build time, which breaks Leaflet's
- *  hardcoded relative paths to marker-icon.png and marker-shadow.png. We fix
- *  this by importing the images through Vite and manually overriding
- *  L.Marker.prototype.options.icon at module load time.
- *  This is done at module level (not inside the component) because it only
- *  needs to run once, and doing it inside the component would repeat it on
- *  every render. The empty useEffect below is intentional — it exists as a
- *  reminder that some setup runs at module load rather than inside React.
- *
- * scrollWheelZoom is disabled because the map is embedded in a scrollable page;
- * allowing wheel zoom would hijack the user's scroll and feel broken.
+ * Live operator map showing one marker per zone with current metrics in the popup.
  */
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
-import type { Threshold } from '../types';
+import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip } from 'react-leaflet';
+import type { AggregationZoneSummary, Alert, Severity } from '../types';
+import { KNOWN_METRICS } from '../types';
 import { CAMPUS_CENTER, ZONE_COORDS } from '../constants/zoneMap';
 import '../map/leafletDefaultIcon';
 
-// Colours match SeverityBadge and SeverityChart for visual consistency
-// across all three components.
-const SEVERITY_COLOUR: Record<string, string> = {
-  low:      '#22c55e',
-  medium:   '#0ea5e9',
-  high:     '#f97316',
+const SEVERITY_COLOUR: Record<'normal' | Severity, string> = {
+  normal: '#14b8a6',
+  low: '#22c55e',
+  medium: '#f59e0b',
+  high: '#f59e0b',
   critical: '#ef4444',
 };
 
 interface ZoneInfo {
   zone: string;
   coords: [number, number];
-  activeCount: number;
-  worstSeverity: string | null; // null when zone has no active thresholds
+  worstSeverity: 'normal' | Severity;
+  metrics: Record<string, number | null>;
 }
 
-/**
- * Derive per-zone display data from the full threshold list.
- *
- * "Worst severity" is determined by the ORDER array (highest severity first).
- * Array.find returns the first match, so a zone with both critical and low
- * thresholds is coloured critical — the most alarming state takes priority.
- */
-function buildZoneInfo(thresholds: Threshold[]): ZoneInfo[] {
+function buildZoneInfo(zoneSummaries: AggregationZoneSummary[], alerts: Alert[]): ZoneInfo[] {
+  const summaryByZone = Object.fromEntries(zoneSummaries.map(z => [z.zone, z]));
   return Object.entries(ZONE_COORDS).map(([zone, coords]) => {
-    const active = thresholds.filter(t => t.zone === zone && t.is_active);
-    const ORDER = ['critical', 'high', 'medium', 'low'];
-    const worst = ORDER.find(s => active.some(t => t.severity === s)) ?? null;
-    return { zone, coords, activeCount: active.length, worstSeverity: worst };
+    const summary = summaryByZone[zone];
+    const active = alerts.filter(a => a.zone === zone && a.status === 'active');
+    const order: Severity[] = ['critical', 'high', 'medium', 'low'];
+    const worstSeverity = order.find(s => active.some(a => a.severity === s)) ?? 'normal';
+    const metrics = Object.fromEntries(
+      KNOWN_METRICS.map(metric => [
+        metric,
+        summary?.metrics.find(m => m.metric === metric)?.value ?? null,
+      ]),
+    );
+    return { zone, coords, worstSeverity, metrics };
   });
 }
 
 interface Props {
-  thresholds: Threshold[];
+  zoneSummaries: AggregationZoneSummary[];
+  alerts: Alert[];
   selectedZone: string | null;
   onZoneClick: (zone: string) => void;
 }
 
-export default function ZoneMap({ thresholds, selectedZone, onZoneClick }: Props) {
-  const zones = buildZoneInfo(thresholds);
+export default function ZoneMap({ zoneSummaries, alerts, selectedZone, onZoneClick }: Props) {
+  const zones = buildZoneInfo(zoneSummaries, alerts);
 
-  // Intentionally empty — Leaflet icon fix is applied at module level above.
-  // This effect exists purely as documentation that some initialisation
-  // happens outside the component lifecycle.
   useEffect(() => {
-    // no-op: icon fix runs at module load, not per render
+    // no-op: Leaflet asset setup happens at module load time
   }, []);
 
   return (
@@ -91,42 +59,57 @@ export default function ZoneMap({ thresholds, selectedZone, onZoneClick }: Props
       center={CAMPUS_CENTER}
       zoom={14}
       style={{ height: '100%', width: '100%', borderRadius: '0.75rem' }}
-      zoomControl={true}
+      zoomControl
       scrollWheelZoom={false}
     >
-      {/* OpenStreetMap tiles — free, no API key required for a demo deployment */}
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
 
-      {zones.map(({ zone, coords, activeCount, worstSeverity }) => {
-        // Fall back to slate when the zone has no active thresholds (grey = neutral)
-        const colour = worstSeverity ? SEVERITY_COLOUR[worstSeverity] : '#94a3b8';
+      {zones.map(({ zone, coords, worstSeverity, metrics }) => {
+        const color = SEVERITY_COLOUR[worstSeverity];
         const isSelected = selectedZone === zone;
 
         return (
           <CircleMarker
             key={zone}
             center={coords}
-            // Selected marker is larger to indicate which zone filters the table
-            radius={isSelected ? 32 : 24}
+            radius={isSelected ? 28 : 22}
             pathOptions={{
-              color:       isSelected ? '#0f766e' : colour,
-              fillColor:   colour,
-              fillOpacity: isSelected ? 0.85 : 0.55,
-              weight:      isSelected ? 3 : 1.5,
+              color: isSelected ? '#0f766e' : color,
+              fillColor: color,
+              fillOpacity: isSelected ? 0.88 : 0.7,
+              weight: isSelected ? 3 : 2,
             }}
-            // Clicking the already-selected zone passes '' which clears the filter
             eventHandlers={{ click: () => onZoneClick(zone === selectedZone ? '' : zone) }}
           >
-            {/* permanent tooltip renders as an overlay label, not a hover popup */}
             <Tooltip permanent direction="center" className="!bg-transparent !border-0 !shadow-none">
               <div className="text-center pointer-events-none select-none">
                 <div className="text-[10px] font-bold text-white drop-shadow">{zone}</div>
-                <div className="text-[9px] text-white/80 drop-shadow">{activeCount} active</div>
               </div>
             </Tooltip>
+            <Popup>
+              <div className="min-w-[180px] space-y-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Zone</p>
+                  <p className="font-bold text-slate-900">{zone}</p>
+                </div>
+                <p className="text-xs font-medium capitalize text-slate-600">
+                  Current status: {worstSeverity === 'normal' ? 'normal' : worstSeverity}
+                </p>
+                <div className="space-y-1.5 pt-1">
+                  {KNOWN_METRICS.map(metric => (
+                    <div key={metric} className="flex items-center justify-between rounded-lg bg-slate-50 px-2.5 py-1.5">
+                      <span className="text-xs font-medium capitalize text-slate-700">{metric}</span>
+                      <span className="text-xs font-mono font-semibold text-slate-900">
+                        {metrics[metric] == null ? '—' : metrics[metric]?.toFixed(1)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Popup>
           </CircleMarker>
         );
       })}

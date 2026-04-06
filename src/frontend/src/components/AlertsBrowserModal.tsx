@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Alert, AlertStatus } from '../types';
 import SeverityBadge from './SeverityBadge';
-import { resolveAlert } from '../api/alerts';
+import { acknowledgeAlert, resolveAlert } from '../api/alerts';
 
 const STATUS_STYLE: Record<AlertStatus, string> = {
   active: 'bg-red-100 text-red-900 ring-red-200/80',
@@ -200,6 +200,17 @@ export default function AlertsBrowserModal({
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 shrink-0">
+                      {a.status === 'active' && (
+                        <button
+                          type="button"
+                          disabled={actionId === a.id}
+                          className="btn-secondary !py-1.5 !text-xs"
+                          onClick={() => void run(a.id, acknowledgeAlert)}
+                          title="Marks the alert acknowledged"
+                        >
+                          {actionId === a.id ? '…' : 'Acknowledge'}
+                        </button>
+                      )}
                       {(a.status === 'active' || a.status === 'acknowledged') && (
                         <button
                           type="button"

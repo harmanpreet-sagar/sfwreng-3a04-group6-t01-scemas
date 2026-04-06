@@ -142,3 +142,46 @@ export interface SseAlertEvent {
   acknowledged_at: string | null;
   resolved_at: string | null;
 }
+
+// ── Aggregation / validation dashboard types ────────────────────────────────
+
+export interface AggregationMetricPoint {
+  metric: string;
+  value: number;
+  aggregation_window: '5m' | '1h' | string;
+  aggregation_type: 'avg' | 'max' | string;
+  window_start: string;
+  window_end: string;
+}
+
+export interface AggregationZoneSummary {
+  zone: string;
+  metrics: AggregationMetricPoint[];
+  updated_at: string;
+}
+
+export interface AggregationZonesResponse {
+  zones: AggregationZoneSummary[];
+  total: number;
+}
+
+export interface AggregationHistoryPoint {
+  value: number;
+  window_start: string;
+  window_end: string;
+}
+
+export interface AggregationHistoryResponse {
+  zone: string;
+  metric: string;
+  aggregation_window: string;
+  aggregation_type: string;
+  points: AggregationHistoryPoint[];
+  total: number;
+}
+
+export interface ValidationStatusResponse {
+  valid: number;
+  failed: number;
+  anomaly: number;
+}
