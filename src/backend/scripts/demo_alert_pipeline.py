@@ -6,7 +6,7 @@ demo on a toy.
 
 End-to-end alerts demo (one evaluator cycle):
 
-  aggregated_data + thresholds → run_threshold_evaluation_cycle()
+  validation_events (VALID) + thresholds → run_threshold_evaluation_cycle()
   → AlertService.create_alert → DB insert → audit log → Twilio (if CRITICAL + env set) → SSE publish
 
 Uses isolated zone/metric pipedemo/co2 so your existing demo rows are untouched.
@@ -42,7 +42,7 @@ def main() -> int:
 
     import psycopg
 
-    print("1) Seed DB: latest aggregated value + active CRITICAL threshold (breached)")
+    print("1) Seed DB: latest VALID validation event + active CRITICAL threshold (breached)")
     with psycopg.connect(db_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -54,18 +54,16 @@ def main() -> int:
                 (ZONE, METRIC),
             )
             cur.execute(
-                "DELETE FROM public.aggregated_data WHERE zone = %s AND metric = %s",
+                "DELETE FROM public.validation_events WHERE zone = %s AND metric_type = %s",
                 (ZONE, METRIC),
             )
             cur.execute(
                 """
-                INSERT INTO public.aggregated_data (
-                    zone, metric, aggregation_window, aggregation_type,
-                    value, window_start, window_end
-                )
-                VALUES (%s, %s, '5m', 'avg', %s, now() - interval '5 minutes', now())
+                INSERT INTO public.validation_events
+                    (sensor_id, zone, metric_type, raw_value, status, reason, timestamp)
+                VALUES (%s, %s, %s, %s, 'VALID', NULL, now())
                 """,
-                (ZONE, METRIC, 900.0),
+                (f"pipedemo-{METRIC}", ZONE, METRIC, 900.0),
             )
             cur.execute(
                 """

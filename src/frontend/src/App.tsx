@@ -30,6 +30,8 @@ import { useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ThresholdsPage from './pages/ThresholdsPage';
+import AccountPage from './pages/AccountPage';
+import RegisterRequestPage from './pages/RegisterRequestPage';
 
 /**
  * Route guard that redirects unauthenticated users to /login.
@@ -56,6 +58,8 @@ export default function App() {
           </RequireAuth>
         }
       />
+      <Route path="/register-request" element={<RegisterRequestPage />} />
+      <Route path="/accounts" element={<RequireAuth><AccountPage /></RequireAuth>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

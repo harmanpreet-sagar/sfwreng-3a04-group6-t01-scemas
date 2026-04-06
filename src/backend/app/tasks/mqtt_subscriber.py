@@ -1,25 +1,18 @@
 """
-MQTT subscriber background task (Ali).
+MQTT Subscriber — FastAPI Background Task
 
-Connects to the Mosquitto broker over TLS, subscribes to scemas/sensors/#,
-and passes each incoming message through the validation pipeline.
+Connects to the Mosquitto MQTT broker over TLS on startup and subscribes
+to the wildcard topic scemas/sensors/#. For every incoming message, parses
+the JSON payload and passes it to the validation pipeline in validation_service.py.
+Runs continuously as a background asyncio task alongside the FastAPI HTTP server.
 
-process_message() is synchronous (psycopg-based) so the paho on_message
-callback calls it directly — asyncio.run() is no longer needed.
+This file imports the function "process_message" from validation_service.py (which calls the functions
+that contain all the validation logic)
 
-tls_insecure_set(True) is intentional for local/Docker environments: the
-server cert CN is "mosquitto" which won't match "localhost" as a hostname.
-Remove this in production when using a properly CA-signed cert.
-
-Configuration (env / .env):
-    MQTT_BROKER_HOST   default: localhost   (use "mosquitto" inside Docker)
-    MQTT_BROKER_PORT   default: 8883
-    MQTT_USERNAME      default: admin
-    MQTT_PASSWORD      default: admin123
-    MQTT_CA_CERT_PATH  default: ./mosquitto/config/certs/ca.crt
+Print statements have also been included for debugging purposes to ensure the MQTT subscriber has 
+been successfully connected. 
 """
 
-from __future__ import annotations
 
 import asyncio
 import json

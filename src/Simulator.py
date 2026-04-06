@@ -1,3 +1,24 @@
+""" File Overview
+Simulates a network of IoT environmental sensors by publishing realistic
+JSON payloads to the Mosquitto MQTT broker. Publishes readings for 4 zones
+(zone-a through zone-d) and 4 metrics (AQI, temperature, humidity, noise)
+every 2-3 seconds. Includes a --spike flag for triggering threshold-crossing
+values during demos, a --zone flag to target a specific zone, and a --rate
+flag to control publish frequency.
+
+Using the --zone flag continuously publishes sensor data from that specific zone until you quit. 
+For example, if you add --zone a, only zone a data will be published (with sensor_id, metricType,
+value and timestap being randomly generated like usual).
+
+The default rate is set to 2.5s. So every 2.5 seconds data is published. BUT that can be controlled
+using the --rate flag. 
+
+The --spike flag is used to input exactly which data you want to publish. For example, --spike zone-a aqi 400. 
+
+
+"""
+
+
 import time
 import random
 import argparse
@@ -38,12 +59,15 @@ RANGES = {
     "noise": (0, 140),
 }
 
-#functions:
+#FUNCTIONS
+
+#takes a metric name (eg. aqi) and generates and random value within the range specified in RANGES dict
+#called by generate_payload()
 def generate_value(metric):
     low, high = RANGES[metric]
     return round(random.uniform(low, high), 2)
 
-
+#generates a properly formatted dict with the 5 required fields. 
 def generate_payload(zone, metric, sensor_id):
     return {
         "sensorId": sensor_id,
@@ -53,7 +77,7 @@ def generate_payload(zone, metric, sensor_id):
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
-
+# takes a zone and metric to return a MQTT format string in correct format
 def build_topic(zone, metric):
     return f"scemas/sensors/{zone}/{metric}"
 
@@ -72,13 +96,13 @@ def generate_spike(zone, metric, value):
     topic = f"scemas/sensors/{zone}/{metric}"
     client.publish(topic, json.dumps(payload))
     print(json.dumps(payload, indent=2))
-    #note for now i think we dont care about which sensor the spike came from, we just want to test it
+    #note we dont care about which sensor the spike came from, we just want to test it
 
 
 # -----------------------------
 # Main loop
 # -----------------------------
-def run_simulator(selected_zone=None, rate=2.5):
+def run_simulator(selected_zone=None, rate=2.5): 
     while True:
         zone = selected_zone if selected_zone else random.choice(ZONES)
         metric = random.choice(METRICS)
@@ -104,7 +128,7 @@ def run_simulator(selected_zone=None, rate=2.5):
 def main():
     parser = argparse.ArgumentParser(description="SCEMAS Sensor Simulator")
 
-    parser.add_argument("--zone", type=str, help="Target a specific zone")
+    parser.add_argument("--zone", type=str, help="Target a specific zone") #eg. "--zone a" 
     parser.add_argument("--rate", type=float, default=2.5, help="Publish rate in seconds")
 
     parser.add_argument(

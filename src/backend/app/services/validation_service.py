@@ -1,5 +1,41 @@
 """
-MQTT message validation pipeline (Ali).
+Validation Pipeline
+
+This is where the core logic is contained for the pipeline. The process_message() function is the most important one as it is called
+in the mqtt_subscriber file, which is where the json data is parsed. 
+
+Processes incoming sensor readings through three sequential steps:
+1. EnsureMQTTCompliance: validates required fields, correct types, and
+   value within the defined range for the given metric type. Failed readings
+   are logged to validation_events with status FAILED and dropped.
+
+   How the code works: 
+   - First it calls the function ensure_mqtt_compliance (returns either true or false). This function checks if the data
+     contains the required fields (sensorid, zone, metric, value, time). If it doesn't then it returns false.
+     Also checks if value is a number and if metric is valid. 
+     IF this function returns false, then in process_message() then we call the function "write_validation_events" 
+     which writes to the table in supabase with the label "Failed"
+
+2. SensorMonitor: compares the incoming value against the last 10 readings
+   for that sensor and metric. Flags as ANOMALY if the value deviates more
+   than 3 standard deviations from the mean. Anomalous readings are logged
+   but still stored.
+
+   How the code works:
+   - calls the sensor_monitor function which uses the last 10 readings to find mean and standard deviation and if the 
+   value we are comparing deviates more than 3 standard deviation from mean, it flags it as anomaly. If it's fine it returns true. 
+
+   3. StoreValidatedData: inserts valid readings into the sensor_readings table
+   in Supabase for downstream aggregation and alerting.
+   In the code it simply uses a Query to store the data in the sensor_readings table. Also writes to validation_events table 
+   stating that data is VALID. 
+
+
+
+
+import os
+from datetime import datetime, timezone, timedelta
+from statistics import mean, stdev
 
 Ported from asyncpg to psycopg so only one DB driver is needed across the
 whole project and asyncpg does not have to appear in requirements.txt.

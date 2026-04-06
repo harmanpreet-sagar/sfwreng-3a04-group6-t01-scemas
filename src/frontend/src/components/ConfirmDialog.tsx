@@ -19,7 +19,7 @@
  */
 interface Props {
   title: string;
-  message: string;
+  message: string | React.ReactNode;
   confirmLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;

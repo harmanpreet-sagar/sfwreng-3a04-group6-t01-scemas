@@ -1,11 +1,12 @@
 """
-Periodic threshold evaluation against latest aggregated values.
+Periodic threshold evaluation against the latest valid validation event per zone/metric.
 
-Calls `AlertService.create_alert` on breach; duplicate active alerts are prevented there
-and via the partial unique index on `alerts`.
+Uses `public.validation_events` rows with status VALID (non-anomalous accepted readings);
+FAILED and ANOMALY rows are ignored. Calls `AlertService.create_alert` on breach; duplicate
+active alerts are prevented there and via the partial unique index on `alerts`.
 
-Simple explanation: The checker that compares latest averaged numbers to the rules; if a
-rule is broken, it tells the alert boss to raise a flag.
+Simple explanation: The checker compares the most recent good sensor value to the rules;
+if a rule is broken, it tells the alert boss to raise a flag.
 """
 
 from __future__ import annotations
@@ -17,14 +18,14 @@ import psycopg.errors
 
 from app.shared.alert import AlertCreate
 from app.shared.enums import AlertSeverity
-from app.services import aggregated_data_repository, threshold_repository
+from app.services import threshold_repository, validation_events_repository
 from app.services.alert_service import AlertService
 from app.shared.db import get_supabase_db_url
 
 logger = logging.getLogger(__name__)
 
 _warned_thresholds_missing = False
-_warned_aggregated_or_alerts_missing = False
+_warned_validation_events_or_alerts_missing = False
 
 
 def is_threshold_breached(condition: str, observed: float, limit_value: float) -> bool:
@@ -45,10 +46,10 @@ def is_threshold_breached(condition: str, observed: float, limit_value: float) -
 
 def run_threshold_evaluation_cycle() -> None:
     """
-    One pass: active thresholds × latest aggregated value per zone/metric; create alerts on breach.
+    One pass: active thresholds × latest VALID validation event per zone/metric; create alerts on breach.
     Safe to call on a timer; logs and returns on missing DB URL, missing tables, or per-rule errors.
     """
-    global _warned_thresholds_missing, _warned_aggregated_or_alerts_missing
+    global _warned_thresholds_missing, _warned_validation_events_or_alerts_missing
 
     if not get_supabase_db_url():
         return
@@ -68,18 +69,20 @@ def run_threshold_evaluation_cycle() -> None:
 
     for rule in thresholds:
         try:
-            observed = aggregated_data_repository.fetch_latest_aggregated_value(
+            observed = validation_events_repository.fetch_latest_valid_raw_value(
                 rule.zone, rule.metric
             )
             if observed is None:
                 logger.debug(
-                    "No aggregated_data for zone=%r metric=%r; skipping",
+                    "No VALID validation_events row for zone=%r metric=%r; skipping",
                     rule.zone,
                     rule.metric,
                 )
                 continue
 
-            if not is_threshold_breached(rule.condition, observed, rule.threshold_value):
+            if not is_threshold_breached(
+                rule.condition, observed, rule.threshold_value
+            ):
                 continue
 
             try:
@@ -119,12 +122,12 @@ def run_threshold_evaluation_cycle() -> None:
                     rule.id,
                 )
         except psycopg.errors.UndefinedTable:
-            if not _warned_aggregated_or_alerts_missing:
+            if not _warned_validation_events_or_alerts_missing:
                 logger.warning(
-                    "aggregated_data and/or alerts table missing; apply migrations "
-                    "001_create_alerts.sql and 004_create_aggregated_data.sql"
+                    "validation_events and/or alerts table missing; apply migrations "
+                    "for validation_events, 001_create_alerts.sql, etc."
                 )
-                _warned_aggregated_or_alerts_missing = True
+                _warned_validation_events_or_alerts_missing = True
             return
         except Exception:
             logger.exception(

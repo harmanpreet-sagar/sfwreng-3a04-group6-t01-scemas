@@ -20,7 +20,8 @@
  */
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { Account } from '../types';
-import { setAuthToken } from '../api/client';
+import { setAuthToken, apiClient } from '../api/client';
+
 
 interface AuthContextValue {
   account: Account | null;
@@ -67,6 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (tok) {
       localStorage.setItem(STORAGE_KEY_TOKEN, tok);
       setAuthToken(tok);
+      apiClient.defaults.headers.common['X-Account-Id'] = String(acc.aid);
+      apiClient.defaults.headers.common['X-Account-Clearance'] = acc.clearance;
+      apiClient.defaults.headers.common['X-Account-Email'] = acc.email;
     }
   }, []);
 
@@ -77,6 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(STORAGE_KEY_TOKEN);
     // Clear the header so the next login attempt goes out unauthenticated.
     setAuthToken(null);
+    delete apiClient.defaults.headers.common['X-Account-Id'];
+    delete apiClient.defaults.headers.common['X-Account-Clearance'];
+    delete apiClient.defaults.headers.common['X-Account-Email'];
   }, []);
 
   // Derive admin flag from the account's clearance string rather than the JWT role

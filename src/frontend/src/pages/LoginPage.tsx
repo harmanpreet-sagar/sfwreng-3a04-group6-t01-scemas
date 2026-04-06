@@ -144,6 +144,10 @@ export default function LoginPage() {
             ← Public site
           </Link>
           <span className="mx-2 text-ink-400">·</span>
+          <Link to="/register-request" className="font-semibold text-moss-800 hover:text-moss-950 underline-offset-2 hover:underline">
+            Request access
+          </Link>
+          <span className="mx-2 text-ink-400">·</span>
           <span className="text-ink-500">SE 3A04 · Group 6</span>
         </p>
       </div>

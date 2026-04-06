@@ -31,4 +31,5 @@ export const ThresholdManagement: React.FC = () => {
 - `ThresholdManagement.tsx` - Threshold CRUD interface
 - `AlertsView.tsx` - Alert history and management
 - `Login.tsx` - User authentication page
-- `Settings.tsx` - User account settings
+- `AccountPage.tsx` - Account management page
+- `RegisterRequests.tsx` - Request accounts page
