@@ -1,6 +1,9 @@
 """
 Threshold Management endpoint tests.
 
+Simple explanation: Automated checks for the “rule book” API. Rules are what usually
+cause alerts later, so these tests use alert-style labels like severity too.
+
 All repository calls are mocked — no real DB required.
 Run from src/backend/:  pytest tests/test_thresholds.py -v
 

@@ -1,16 +1,27 @@
-"""Alert endpoints: read list/detail and lifecycle (acknowledge / resolve)."""
+"""Alert endpoints: read list/detail and lifecycle (acknowledge / resolve).
+
+Simple explanation: The website doors for alerts—list them, filter them, watch a live
+stream of changes, and buttons to say “I saw it” or “it is fixed.”
+
+RBAC (aligned with thresholds / SRS):
+  All routes — OPERATOR + ADMIN (JWT Bearer). Unauthenticated callers get 401.
+
+SSE note: Browsers' EventSource cannot set Authorization headers. The dashboard should
+connect with fetch() + ReadableStream, or another client that can send Bearer tokens.
+"""
 
 from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.shared.alert import AlertListResponse, AlertResponse
+from app.shared.alert_sse_broadcaster import alert_sse_broadcaster
+from app.shared.auth import CurrentUser, require_operator_or_admin
 from app.shared.enums import AlertSeverity, AlertStatus
 from app.services.alert_service import AlertService
-from app.shared.alert_sse_broadcaster import alert_sse_broadcaster
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
@@ -28,13 +39,17 @@ def get_alerts(
     severity: Optional[AlertSeverity] = Query(
         None, description="Filter by severity"
     ),
+    _user: CurrentUser = Depends(require_operator_or_admin),
 ) -> AlertListResponse:
     rows = AlertService.list_alerts(status=status, zone=zone, severity=severity)
     return AlertListResponse(alerts=rows, total=len(rows))
 
 
 @router.get("/stream")
-async def alert_event_stream(request: Request) -> StreamingResponse:
+async def alert_event_stream(
+    request: Request,
+    _user: CurrentUser = Depends(require_operator_or_admin),
+) -> StreamingResponse:
     """Server-Sent Events stream of new/updated alerts (in-memory PoC)."""
     return StreamingResponse(
         alert_sse_broadcaster.stream(request),
@@ -48,7 +63,10 @@ async def alert_event_stream(request: Request) -> StreamingResponse:
 
 
 @router.patch("/{alert_id}/acknowledge", response_model=AlertResponse)
-def acknowledge_alert(alert_id: int) -> AlertResponse:
+def acknowledge_alert(
+    alert_id: int,
+    _user: CurrentUser = Depends(require_operator_or_admin),
+) -> AlertResponse:
     outcome = AlertService.acknowledge_alert(alert_id)
     if outcome.alert is not None:
         return outcome.alert
@@ -74,7 +92,10 @@ def acknowledge_alert(alert_id: int) -> AlertResponse:
 
 
 @router.patch("/{alert_id}/resolve", response_model=AlertResponse)
-def resolve_alert(alert_id: int) -> AlertResponse:
+def resolve_alert(
+    alert_id: int,
+    _user: CurrentUser = Depends(require_operator_or_admin),
+) -> AlertResponse:
     outcome = AlertService.resolve_alert(alert_id)
     if outcome.alert is not None:
         return outcome.alert
@@ -121,7 +142,10 @@ def resolve_alert(alert_id: int) -> AlertResponse:
         }
     },
 )
-def get_alert(alert_id: int) -> AlertResponse:
+def get_alert(
+    alert_id: int,
+    _user: CurrentUser = Depends(require_operator_or_admin),
+) -> AlertResponse:
     alert = AlertService.get_alert_by_id(alert_id)
     if alert is None:
         raise HTTPException(

@@ -3,6 +3,9 @@ Periodic threshold evaluation against latest aggregated values.
 
 Calls `AlertService.create_alert` on breach; duplicate active alerts are prevented there
 and via the partial unique index on `alerts`.
+
+Simple explanation: The checker that compares latest averaged numbers to the rules; if a
+rule is broken, it tells the alert boss to raise a flag.
 """
 
 from __future__ import annotations

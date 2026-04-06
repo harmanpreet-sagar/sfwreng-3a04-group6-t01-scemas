@@ -1,6 +1,9 @@
 """
 Public API tests (Bearer API key, rate limit, zone routes).
 
+Simple explanation: Checks the public zone JSON, including fields that say if a zone is
+in “alert mode” and how serious open alerts are—without using a real database.
+
 Repository/service calls are mocked — no real DB required.
 Run from src/backend/:  pytest tests/test_public_api.py -v
 """

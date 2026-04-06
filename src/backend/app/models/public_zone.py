@@ -1,4 +1,9 @@
-"""Public, read-only zone summaries for signage / external dashboards."""
+"""Public, read-only zone summaries for signage / external dashboards.
+
+Simple explanation: Describes the simple public view of a zone—mostly latest numbers,
+plus a plain “all good” vs “something’s wrong” hint from active alerts (without spilling
+private alert details).
+"""
 
 from __future__ import annotations
 

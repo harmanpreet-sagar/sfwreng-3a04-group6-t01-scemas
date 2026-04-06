@@ -3,6 +3,9 @@ Structured audit logging for operational traceability.
 
 Uses the stdlib logging stack so deployments can route `scemas.audit` to JSON sinks
 or log aggregators without a separate audit table (PoC-friendly).
+
+Simple explanation (alerts): When the alert boss creates an alert, it writes a dated
+“what happened” line here so grown-ups can trace it later.
 """
 
 from __future__ import annotations

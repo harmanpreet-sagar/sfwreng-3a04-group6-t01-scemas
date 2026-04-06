@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """
+Simple explanation: A one-shot “show and tell” that fakes data, runs the checker once,
+and walks through saving an alert, optional text message, and live push—like pressing
+demo on a toy.
+
 End-to-end alerts demo (one evaluator cycle):
 
   aggregated_data + thresholds → run_threshold_evaluation_cycle()

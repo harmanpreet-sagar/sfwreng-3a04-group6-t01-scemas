@@ -2,6 +2,9 @@
 Read-only public zone summaries (Deliverable 4).
 
 Requires API key + in-memory rate limit.
+
+Simple explanation: Public URLs that return zone summaries, including a simple alerting
+hint (normal vs alerting) derived from active alerts—needs an API key like a badge.
 """
 
 from __future__ import annotations

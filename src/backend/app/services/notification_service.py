@@ -1,7 +1,13 @@
 """
 SMS notifications via Twilio (proof-of-concept). Used for CRITICAL environmental alerts only.
 
+SMS is **opt-in**: set `TWILIO_SMS_ENABLED=true` (or `1` / `yes`) to send. Otherwise CRITICAL
+alerts are still saved but no Twilio API call runs (saves trial credits during demos).
+
 Secrets come from environment variables only; never log tokens or message bodies with secrets.
+
+Simple explanation: Sends a text message to a real phone when an alert is the worst
+level (critical), Twilio env vars are set, and SMS is explicitly enabled.
 """
 
 from __future__ import annotations
@@ -12,6 +18,11 @@ import os
 from app.shared.alert import AlertResponse
 
 logger = logging.getLogger(__name__)
+
+
+def _twilio_sms_explicitly_enabled() -> bool:
+    return os.getenv("TWILIO_SMS_ENABLED", "").strip().lower() in ("1", "true", "yes")
+
 
 def _missing_twilio_env() -> list[str]:
     """SID, token, and recipient are required; sender is either FROM number or Messaging Service."""
@@ -47,9 +58,17 @@ def send_critical_alert_sms_if_configured(alert: AlertResponse) -> None:
     """
     Send one SMS for a newly persisted CRITICAL alert.
 
+    No-op unless `TWILIO_SMS_ENABLED` is truthy — avoids spending Twilio trial credits by default.
     If Twilio is not fully configured, logs a warning and returns.
     If Twilio returns an error, logs and returns (alert is already in the DB).
     """
+    if not _twilio_sms_explicitly_enabled():
+        logger.debug(
+            "Twilio SMS disabled (set TWILIO_SMS_ENABLED=true to send); skipping critical alert id=%s",
+            alert.id,
+        )
+        return
+
     missing = _missing_twilio_env()
     if missing:
         logger.warning(

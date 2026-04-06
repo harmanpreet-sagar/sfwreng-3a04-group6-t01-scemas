@@ -1,3 +1,7 @@
+-- Simple explanation: This file creates the database “notebook” where each alert is
+-- saved—like a flag that says something went wrong in a zone, how serious it is,
+-- and whether someone already handled it.
+--
 -- Migration: 001_create_alerts
 -- Creates the alerts table for operational monitoring + history.
 

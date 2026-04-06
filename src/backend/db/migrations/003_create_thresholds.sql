@@ -1,3 +1,6 @@
+-- Simple explanation: This file creates the “rule book” table—lines in the sand per room
+-- and measurement. When real numbers cross those lines, the system can raise an alert.
+--
 -- Migration: 003_create_thresholds
 -- Rule definitions for the alerting engine (zone + metric + condition + limit).
 

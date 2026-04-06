@@ -1,4 +1,9 @@
-"""Persistence helpers for `public.alerts` (no HTTP layer)."""
+"""Persistence helpers for `public.alerts` (no HTTP layer).
+
+Simple explanation: The librarian that saves and loads alert rows in the database, and
+checks whether there is already an open flag for the same room + measurement so you
+do not get duplicates.
+"""
 
 from __future__ import annotations
 

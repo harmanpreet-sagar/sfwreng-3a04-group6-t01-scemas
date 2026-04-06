@@ -1,4 +1,8 @@
-"""Pydantic models for the Alerts subsystem (Aakash)."""
+"""Pydantic models for the Alerts subsystem (Aakash).
+
+Simple explanation: The checklist shapes for an alert—what room, what number type,
+how serious, the message, and what you send back over the API.
+"""
 
 from __future__ import annotations
 

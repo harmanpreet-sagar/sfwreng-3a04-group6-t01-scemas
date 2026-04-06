@@ -1,3 +1,6 @@
+-- Simple explanation: This file adds pretend numbers and a super-serious rule so you can
+-- test “send a text when it’s really bad” without messing up your other demo data.
+--
 -- Demo seed: CRITICAL threshold + aggregated reading that breaches it (Twilio SMS test).
 -- Run after migrations. Safe to re-run: refreshes aggregation sample; threshold insert is conditional.
 

@@ -4,6 +4,10 @@ these functions rather than embedding SQL.
 
 Extension hooks: after a successful insert, Twilio/SSE can subscribe to the same outcome
 or listen for audit logs without changing the core insert path.
+
+Simple explanation: The boss of alerts—create a new flag, mark it “someone noticed,”
+mark it “all clear,” write a diary note (audit), ping live dashboards (SSE), and for
+the worst level optionally send a text.
 """
 
 from __future__ import annotations

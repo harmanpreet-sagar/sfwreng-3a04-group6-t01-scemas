@@ -3,6 +3,9 @@ In-memory SSE fan-out for alert events (proof-of-concept).
 
 Safe to call publish() from sync code (e.g. AlertService); subscribers consume via
 async StreamingResponse. Slow clients that fill their queue are dropped.
+
+Simple explanation: A loudspeaker inside the app—when an alert is created or updated,
+this pushes that news right away to any dashboard that is listening.
 """
 
 from __future__ import annotations

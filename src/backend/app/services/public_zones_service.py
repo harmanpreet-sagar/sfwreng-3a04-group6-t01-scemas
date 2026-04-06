@@ -1,4 +1,8 @@
-"""Assemble public-safe zone summaries from aggregated_data (+ alert severity rollup)."""
+"""Assemble public-safe zone summaries from aggregated_data (+ alert severity rollup).
+
+Simple explanation: Builds those public zone summaries by mixing latest averaged readings
+with “how bad are open alerts in this zone?” so signs or kiosks can show a simple status.
+"""
 
 from __future__ import annotations
 

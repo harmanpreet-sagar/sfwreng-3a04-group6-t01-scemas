@@ -1,4 +1,9 @@
-"""Shared enums used across all subsystem models."""
+"""Shared enums used across all subsystem models.
+
+Simple explanation: Named labels the app uses everywhere. For alerts, think of stickers:
+how bad something is (low → critical) and what stage the alert is in (new → seen → fixed).
+Other enums here label user roles, threshold comparisons, and validation outcomes.
+"""
 
 from __future__ import annotations
 

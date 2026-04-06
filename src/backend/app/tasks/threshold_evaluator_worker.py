@@ -1,4 +1,8 @@
-"""Background polling loop for threshold evaluation (FastAPI lifespan)."""
+"""Background polling loop for threshold evaluation (FastAPI lifespan).
+
+Simple explanation: A timer that wakes up every few seconds and says “run the checker
+again” so new bad readings can become alerts without you clicking anything.
+"""
 
 from __future__ import annotations
 
