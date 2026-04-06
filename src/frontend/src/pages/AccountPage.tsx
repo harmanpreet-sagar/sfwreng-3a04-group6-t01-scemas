@@ -205,12 +205,16 @@ export default function AccountsPage() {
 
   async function handleDeny() {
     if (!denyTarget) return;
+    const target = denyTarget;
+    setDenyTarget(null); // close dialog immediately
     try {
-      await denyRequest(denyTarget.id);
-      setPending(prev => prev.filter(r => r.id !== denyTarget.id));
-      void loadAuditLog();
-    } catch { /* silent */ }
-    finally { setDenyTarget(null); }
+        await denyRequest(target.id);
+        setPending(prev => prev.filter(r => r.id !== target.id));
+        void loadAuditLog();
+    } catch (err: unknown) {
+        console.error('Deny failed:', err);
+        void loadPending(); // reload to restore state if it failed
+    }
   }
 
   // ── Stats (admin only) ───────────────────────────────────────────────────────

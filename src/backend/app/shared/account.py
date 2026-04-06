@@ -93,3 +93,27 @@ class AuditLogEntry(BaseModel):
 class AuditLogListResponse(BaseModel):
     entries: List[AuditLogEntry]
     total: int
+
+class PendingRequestCreate(BaseModel):
+    """Body for POST /account/request"""
+    name: str = Field(..., min_length=1, max_length=128)
+    email: EmailStr
+    clearance: str = Field(..., pattern="^(admin|operator)$")
+    reason: Optional[str] = Field(None, max_length=500)
+ 
+ 
+class PendingRequestResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    clearance: str
+    reason: Optional[str]
+    requested_at: datetime
+ 
+    model_config = {"from_attributes": True}
+ 
+ 
+class PendingRequestListResponse(BaseModel):
+    requests: List[PendingRequestResponse]
+    total: int
+ 

@@ -41,6 +41,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.shared.account import (
     AccountCreate, AccountListResponse, AccountResponse,
     AuditLogListResponse, CredentialsUpdate, LoginRequest, LoginResponse,
+
+    PendingRequestCreate,
+    PendingRequestListResponse,
+    PendingRequestResponse,
 )
 from app.shared.account_dependencies import get_current_account, require_admin
 from app.services.accounts_service import AccountService
@@ -131,6 +135,63 @@ def get_audit_log(
     entries = AccountService.list_audit_log(event_type=event_type, date_from=date_from, date_to=date_to)
     return AuditLogListResponse(entries=entries, total=len(entries))
 
+@router.post("/request", response_model=PendingRequestResponse, status_code=201)
+def submit_request(body: PendingRequestCreate) -> PendingRequestResponse:
+    """
+    Submit a new account registration request. No auth required — public endpoint.
+    The request is stored and surfaced to admins in the pending requests tab.
+    """
+    try:
+        result = AccountService.submit_registration_request(body)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return PendingRequestResponse(**result)
+ 
+ 
+@router.get("/requests/pending", response_model=PendingRequestListResponse)
+def list_pending_requests(_: dict = Depends(require_admin)) -> PendingRequestListResponse:
+    """List all pending registration requests. Admin only."""
+    rows = AccountService.list_pending_requests()
+    return PendingRequestListResponse(requests=[PendingRequestResponse(**r) for r in rows],total=len(rows))
+ 
+ 
+@router.post("/requests/{request_id}/approve", response_model=AccountResponse)
+def approve_request(
+    request_id: int,
+    actor: dict = Depends(require_admin),
+) -> AccountResponse:
+    """
+    Approve a pending request — creates the account and logs the event.
+    Admin only.
+    """
+    account = AccountService.approve_request(
+        request_id=request_id,
+        actor_id=actor["aid"],
+        actor_email=actor["email"],
+    )
+    if account is None:
+        raise HTTPException(status_code=404,detail={"error": "request_not_found", "message": "No pending request with this id", "request_id": request_id})
+    return account
+ 
+ 
+@router.post("/requests/{request_id}/deny", status_code=200)
+def deny_request(
+    request_id: int,
+    actor: dict = Depends(require_admin),
+) -> None:
+    """
+    Deny a pending request — deletes it and logs the event.
+    Admin only.
+    """
+    deleted = AccountService.deny_request(
+        request_id=request_id,
+        actor_id=actor["aid"],
+        actor_email=actor["email"],
+    )
+    if not deleted:
+        raise HTTPException(status_code=404,detail={"error": "request_not_found", "message": "No pending request with this id", "request_id": request_id})
+    return {"message": "Request denied successfully"}
+
 
 @router.get("/{aid}", response_model=AccountResponse)
 def get_account(aid: int, current: dict = Depends(get_current_account)) -> AccountResponse:
@@ -157,6 +218,7 @@ def change_credentials(
     if account is None:
         raise HTTPException(status_code=404, detail={"error": "account_not_found", "message": _NOT_FOUND, "aid": aid})
     return account
+ 
 
 
 @router.patch("/{aid}/deactivate", response_model=AccountResponse)
