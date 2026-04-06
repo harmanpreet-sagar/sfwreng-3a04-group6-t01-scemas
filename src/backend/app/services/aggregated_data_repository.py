@@ -189,7 +189,7 @@ def fetch_hourly_max_rollups(
     *, window_start: datetime, window_end: datetime
 ) -> list[RawHourlyMaxRow]:
     """
-    Compute hourly maxima per zone/metric from sensor_readings for one 1-hour window.
+    Compute hourly maxima per zone/metric from the previous 5-minute max buckets.
     """
     with db_connection() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -197,13 +197,15 @@ def fetch_hourly_max_rollups(
                 """
                 SELECT
                     zone,
-                    metric_type AS metric,
+                    metric,
                     MAX(value) AS max_value
-                FROM public.sensor_readings
-                WHERE timestamp >= %s
-                  AND timestamp < %s
-                GROUP BY zone, metric_type
-                ORDER BY zone, metric_type
+                FROM public.aggregated_data
+                WHERE aggregation_window = '5m'
+                  AND aggregation_type = 'max'
+                  AND window_end > %s
+                  AND window_end <= %s
+                GROUP BY zone, metric
+                ORDER BY zone, metric
                 """,
                 (window_start, window_end),
             )

@@ -22,10 +22,12 @@ export async function getAggregationHistory(
   zone: string,
   metric: string,
   limit = 24,
+  aggregationWindow = '5m',
+  aggregationType = 'avg',
 ): Promise<AggregationHistoryResponse> {
   const { data } = await apiClient.get<AggregationHistoryResponse>(
     `/aggregation/zones/${encodeURIComponent(zone)}/history`,
-    { params: { metric, limit } },
+    { params: { metric, limit, aggregation_window: aggregationWindow, aggregation_type: aggregationType } },
   );
   return data;
 }

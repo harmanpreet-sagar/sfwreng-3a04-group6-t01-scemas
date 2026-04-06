@@ -50,7 +50,15 @@ def get_aggregation_zone(
 def get_aggregation_zone_history(
     zone: Annotated[str, Path(..., min_length=1, max_length=256)],
     metric: Annotated[str, Query(..., min_length=1)],
+    aggregation_window: Annotated[str, Query(min_length=1)] = "5m",
+    aggregation_type: Annotated[str, Query(min_length=1)] = "avg",
     limit: Annotated[int, Query(ge=1, le=500)] = 50,
     _: CurrentUser = Depends(require_operator_or_admin),
 ) -> AggregationHistoryResponse:
-    return get_zone_metric_history(zone.strip(), metric.strip(), limit=limit)
+    return get_zone_metric_history(
+        zone.strip(),
+        metric.strip(),
+        limit=limit,
+        aggregation_window=aggregation_window.strip(),
+        aggregation_type=aggregation_type.strip(),
+    )

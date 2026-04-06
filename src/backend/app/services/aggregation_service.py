@@ -126,11 +126,15 @@ def get_zone_metric_history(
     metric: str,
     *,
     limit: int,
+    aggregation_window: str = "5m",
+    aggregation_type: str = "avg",
 ) -> AggregationHistoryResponse:
     rows = aggregated_data_repository.fetch_history_for_zone_metric(
         zone,
         metric,
         limit=limit,
+        aggregation_window=aggregation_window,
+        aggregation_type=aggregation_type,
     )
     points = [
         AggregationHistoryPoint(
@@ -143,8 +147,8 @@ def get_zone_metric_history(
     return AggregationHistoryResponse(
         zone=zone,
         metric=metric,
-        aggregation_window="5m",
-        aggregation_type="avg",
+        aggregation_window=aggregation_window,
+        aggregation_type=aggregation_type,
         points=points,
         total=len(points),
     )

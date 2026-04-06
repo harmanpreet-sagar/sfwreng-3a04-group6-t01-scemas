@@ -14,6 +14,7 @@ import {
   getMetricQualityLabel,
   getMetricQualityTone,
 } from '../lib/aqi';
+import { formatMetricValue, metricLabel } from '../lib/metrics';
 
 interface Props {
   /** Live summaries from public API, or null to show static coverage */
@@ -84,7 +85,7 @@ export default function PublicLandingMap({ zones }: Props) {
                     return (
                       <div key={metric} className="flex items-center justify-between rounded-lg bg-slate-50 px-2.5 py-1.5">
                         <div>
-                          <span className="text-xs font-medium capitalize text-slate-700">{metric}</span>
+                          <span className="text-xs font-medium text-slate-700">{metricLabel(metric)}</span>
                           <div className="mt-1">
                             <span className={`badge ring-1 ${getMetricQualityTone(metric, value)}`}>
                               {getMetricQualityLabel(metric, value)}
@@ -92,7 +93,7 @@ export default function PublicLandingMap({ zones }: Props) {
                           </div>
                         </div>
                         <span className="text-xs font-mono font-semibold text-slate-900">
-                          {value == null ? '—' : value.toFixed(1)}
+                          {formatMetricValue(metric, value)}
                         </span>
                       </div>
                     );

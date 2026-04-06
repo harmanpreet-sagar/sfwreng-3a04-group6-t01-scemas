@@ -1,10 +1,12 @@
 """
-Data Validation query endpoints (Ali).
+Validation Router — REST API Endpoints
 
-These endpoints let operators inspect the live output of the MQTT validation
-pipeline without querying the DB directly.  They are read-only — all writes
-to validation_events happen in validation_service.process_message(), which
-is triggered by the MQTT subscriber on every incoming sensor message.
+Exposes two endpoints for monitoring the health of the data ingestion pipeline:
+- GET /validation/status: returns counts of valid, failed, and anomalous
+  readings processed in the last hour. Used by the operational dashboard
+  as a pipeline health indicator.
+- GET /validation/events: returns the 50 most recent validation events
+  with their status and reason. Accessible to OPERATOR and ADMIN roles.
 
 Ported from asyncpg to psycopg so the project uses a single DB driver.
 asyncpg used $1/$2 placeholders; psycopg uses %s.

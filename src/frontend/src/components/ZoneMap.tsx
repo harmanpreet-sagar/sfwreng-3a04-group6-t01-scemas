@@ -7,6 +7,7 @@ import type { AggregationZoneSummary, Alert, Severity } from '../types';
 import { KNOWN_METRICS } from '../types';
 import { CAMPUS_CENTER, ZONE_COORDS } from '../constants/zoneMap';
 import '../map/leafletDefaultIcon';
+import { formatMetricValue, metricLabel } from '../lib/metrics';
 
 const SEVERITY_COLOUR: Record<'normal' | Severity, string> = {
   normal: '#14b8a6',
@@ -101,9 +102,9 @@ export default function ZoneMap({ zoneSummaries, alerts, selectedZone, onZoneCli
                 <div className="space-y-1.5 pt-1">
                   {KNOWN_METRICS.map(metric => (
                     <div key={metric} className="flex items-center justify-between rounded-lg bg-slate-50 px-2.5 py-1.5">
-                      <span className="text-xs font-medium capitalize text-slate-700">{metric}</span>
+                      <span className="text-xs font-medium text-slate-700">{metricLabel(metric)}</span>
                       <span className="text-xs font-mono font-semibold text-slate-900">
-                        {metrics[metric] == null ? '—' : metrics[metric]?.toFixed(1)}
+                        {formatMetricValue(metric, metrics[metric])}
                       </span>
                     </div>
                   ))}

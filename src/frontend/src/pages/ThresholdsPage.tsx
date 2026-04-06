@@ -37,7 +37,7 @@ import {
 } from '../api/thresholds';
 import { listAlerts } from '../api/alerts';
 import { getAggregationHistory, getAggregationZones } from '../api/aggregation';
-import { getValidationStatus } from '../api/validation';
+import { getValidationEvents } from '../api/validation';
 import { API_BASE } from '../api/client';
 import { openAlertSseStream } from '../lib/sseAlerts';
 import { useAuth } from '../context/AuthContext';
@@ -48,7 +48,8 @@ import type {
   SseAlertEvent,
   Threshold,
   ThresholdCreate,
-  ValidationStatusResponse,
+  ValidationEventRecord,
+  ValidationIssue,
 } from '../types';
 import ThresholdTable from '../components/ThresholdTable';
 import ThresholdFormModal from '../components/ThresholdFormModal';
@@ -56,7 +57,7 @@ import SeverityChart from '../components/SeverityChart';
 import ZoneMap from '../components/ZoneMap';
 import ViolationAlertModal from '../components/ViolationAlertModal';
 import AlertsBrowserModal from '../components/AlertsBrowserModal';
-import AggregationHistoryChart from '../components/AggregationHistoryChart';
+import AggregationHistoryChart, { type HistoryViewMode } from '../components/AggregationHistoryChart';
 import MetricGauge from '../components/MetricGauge';
 import PipelineHealthIndicator from '../components/PipelineHealthIndicator';
 import { ScemasLogoMark } from '../components/ScemasLogoMark';
@@ -81,11 +82,14 @@ export default function ThresholdsPage() {
   const [aggregationZones, setAggregationZones] = useState<AggregationZoneSummary[]>([]);
   const [aggregationLoading, setAggregationLoading] = useState(true);
   const [aggregationError, setAggregationError] = useState<string | null>(null);
-  const [validationStatus, setValidationStatus] = useState<ValidationStatusResponse | null>(null);
+  const [validationEvents, setValidationEvents] = useState<ValidationEventRecord[]>([]);
   const [validationLoading, setValidationLoading] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [validationZone, setValidationZone] = useState('');
+  const [validationIssueStatus, setValidationIssueStatus] = useState<'all' | 'anomaly' | 'failed'>('all');
   const [chartZone, setChartZone] = useState('zone-a');
   const [chartMetric, setChartMetric] = useState('aqi');
+  const [chartViewMode, setChartViewMode] = useState<HistoryViewMode>('5m-avg-line');
   const [gaugeZone, setGaugeZone] = useState('zone-a');
   const [gaugeMetric, setGaugeMetric] = useState('aqi');
   const [historyData, setHistoryData] = useState<AggregationHistoryResponse | null>(null);
@@ -181,8 +185,8 @@ export default function ThresholdsPage() {
     setValidationLoading(true);
     setValidationError(null);
     try {
-      const data = await getValidationStatus();
-      setValidationStatus(data);
+      const events = await getValidationEvents();
+      setValidationEvents(events);
     } catch {
       setValidationError('Failed to load pipeline health.');
     } finally {
@@ -215,7 +219,16 @@ export default function ThresholdsPage() {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const data = await getAggregationHistory(chartZone, chartMetric, 24);
+      const aggregationWindow = chartViewMode === '1h-max-scatter' ? '1h' : '5m';
+      const aggregationType = chartViewMode === '1h-max-scatter' ? 'max' : 'avg';
+      const limit = chartViewMode === '1h-max-scatter' ? 24 : 24;
+      const data = await getAggregationHistory(
+        chartZone,
+        chartMetric,
+        limit,
+        aggregationWindow,
+        aggregationType,
+      );
       setHistoryData(data);
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -223,7 +236,7 @@ export default function ThresholdsPage() {
     } finally {
       setHistoryLoading(false);
     }
-  }, [chartMetric, chartZone]);
+  }, [chartMetric, chartViewMode, chartZone]);
 
   useEffect(() => {
     void loadHistory();
@@ -281,6 +294,35 @@ export default function ThresholdsPage() {
     ?? gaugeZoneSummary?.metrics[0]
     ?? null;
   const availableZones = aggregationZones.map(z => z.zone);
+  const validationScopedEvents = validationEvents.filter(event =>
+    !validationZone || event.zone === validationZone,
+  );
+  const validationTopCounts = validationScopedEvents.reduce(
+    (acc, event) => {
+      if (event.status === 'VALID') acc.valid += 1;
+      else if (event.status === 'ANOMALY') acc.anomaly += 1;
+      else if (event.status === 'FAILED') acc.failed += 1;
+      return acc;
+    },
+    { valid: 0, anomaly: 0, failed: 0 },
+  );
+  const validationIssues: ValidationIssue[] = validationScopedEvents
+    .filter(event => event.status === 'ANOMALY' || event.status === 'FAILED')
+    .filter(event => validationIssueStatus === 'all' || event.status === validationIssueStatus.toUpperCase())
+    .map(event => ({
+      status: event.status.toLowerCase(),
+      zone: event.zone,
+      metric: event.metric_type,
+      value: event.raw_value,
+      timestamp: event.timestamp,
+      reason: event.reason ?? 'Validation flagged this reading.',
+      sensor_id: event.sensor_id,
+    }));
+  const validationWidgetStatus = {
+    valid: validationTopCounts.valid,
+    anomaly: validationTopCounts.anomaly,
+    failed: validationTopCounts.failed,
+  };
 
   // ── CRUD handlers ────────────────────────────────────────────────────────────
   // Handlers receive the minimal payload from the form/table and delegate
@@ -335,6 +377,7 @@ export default function ThresholdsPage() {
   // same zone again deselects it (zone === selectedZone → empty string clears filter).
   function handleZoneClick(zone: string) {
     setSelectedZone(zone || null);
+    setValidationZone(zone);
     if (zone) {
       setChartZone(zone);
       setGaugeZone(zone);
@@ -521,14 +564,19 @@ export default function ThresholdsPage() {
             zone={chartZone}
             metric={chartMetric}
             points={historyData?.points ?? []}
+            aggregationWindow={historyData?.aggregation_window ?? (chartViewMode === '1h-max-scatter' ? '1h' : '5m')}
+            aggregationType={historyData?.aggregation_type ?? (chartViewMode === '1h-max-scatter' ? 'max' : 'avg')}
+            viewMode={chartViewMode}
             loading={historyLoading}
             error={historyError}
             zones={availableZones}
             metrics={[...KNOWN_METRICS]}
             selectedZone={chartZone}
             selectedMetric={chartMetric}
+            selectedViewMode={chartViewMode}
             onZoneChange={setChartZone}
             onMetricChange={setChartMetric}
+            onViewModeChange={setChartViewMode}
           />
 
           <MetricGauge
@@ -545,7 +593,13 @@ export default function ThresholdsPage() {
           />
 
           <PipelineHealthIndicator
-            status={validationStatus}
+            status={validationWidgetStatus}
+            issues={validationIssues}
+            zones={availableZones}
+            selectedZone={validationZone}
+            selectedIssueStatus={validationIssueStatus}
+            onZoneChange={setValidationZone}
+            onIssueStatusChange={setValidationIssueStatus}
             loading={validationLoading}
             error={validationError}
           />
@@ -570,6 +624,7 @@ export default function ThresholdsPage() {
                   const zone = e.target.value;
                   setFilter(f => ({ ...f, zone: zone }));
                   setSelectedZone(zone || null);
+                  setValidationZone(zone);
                   if (zone) {
                     setChartZone(zone);
                     setGaugeZone(zone);

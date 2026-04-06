@@ -184,4 +184,29 @@ export interface ValidationStatusResponse {
   valid: number;
   failed: number;
   anomaly: number;
+  total_checked?: number;
+  window_minutes?: number;
+  issues?: ValidationIssue[];
+  zone?: string | null;
+}
+
+export interface ValidationIssue {
+  status: 'valid' | 'failed' | 'anomaly' | string;
+  zone: string | null;
+  metric: string | null;
+  value: number | null;
+  timestamp: string;
+  reason: string;
+  sensor_id: string | null;
+}
+
+export interface ValidationEventRecord {
+  id: number;
+  sensor_id: string | null;
+  zone: string | null;
+  metric_type: string | null;
+  raw_value: number | null;
+  status: 'VALID' | 'FAILED' | 'ANOMALY' | string;
+  reason: string | null;
+  timestamp: string;
 }

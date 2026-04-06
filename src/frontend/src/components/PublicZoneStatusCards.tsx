@@ -4,6 +4,7 @@
 import type { PublicZoneSummary } from '../api/publicZones';
 import { KNOWN_METRICS, KNOWN_ZONES } from '../types';
 import { getAqiLabel, getAqiTone, getMetricQualityLabel, getMetricQualityTone } from '../lib/aqi';
+import { formatMetricValue, metricLabel } from '../lib/metrics';
 
 interface Props {
   zones: PublicZoneSummary[] | null;
@@ -45,9 +46,12 @@ export default function PublicZoneStatusCards({ zones }: Props) {
                 return (
                   <div key={metric} className="flex items-center justify-between rounded-xl bg-parchment/70 px-3 py-2">
                     <div>
-                      <span className="text-sm font-medium capitalize text-ink-700">{metric}</span>
+                      <span className="text-sm font-medium text-ink-700">{metricLabel(metric)}</span>
                     </div>
                     <div className="text-right">
+                      <p className="text-sm font-semibold text-ink-900 tabular-nums">
+                        {formatMetricValue(metric, value)}
+                      </p>
                       <span className={`badge ring-1 ${getMetricQualityTone(metric, value)}`}>
                         {getMetricQualityLabel(metric, value)}
                       </span>
