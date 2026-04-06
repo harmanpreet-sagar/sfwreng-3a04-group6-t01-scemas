@@ -2,39 +2,33 @@
 
 ## Security Notice
 
-**Private keys are NOT committed to version control for security reasons.**
+**All certificate and key files are gitignored and must be generated locally.**
 
-Only public certificates (`.crt` files) are tracked in git. Private keys (`.key` files) must be generated locally by each developer.
+Neither private keys nor public certificates are committed to version control.
+Committing `.crt` files while `.key` files are gitignored causes a key/cert mismatch
+whenever a teammate regenerates the key — all four files must stay in sync locally.
 
-## Generating Certificates
-
-Run the setup script to generate all required certificates:
-
-```bash
-# From project root
-./scripts/setup_dev.sh
-```
-
-Or generate certificates manually:
+## First-time setup (run once after cloning)
 
 ```bash
-# From project root
+# From the repository root
 ./scripts/generate_certs.sh
 ```
 
-This will create:
-- `ca.key` - Certificate Authority private key (NOT in git)
-- `ca.crt` - Certificate Authority certificate (in git)
-- `server.key` - Server private key (NOT in git)
-- `server.crt` - Server certificate (in git)
+This generates all four files locally:
 
-## Files in This Directory
+| File | Purpose | Committed? |
+|---|---|---|
+| `ca.key` | CA private key | No — gitignored |
+| `ca.crt` | CA certificate | No — gitignored |
+| `server.key` | Server private key | No — gitignored |
+| `server.crt` | Server certificate signed by CA | No — gitignored |
 
-- **`ca.crt`** - Public CA certificate (committed)
-- **`server.crt`** - Public server certificate (committed)
-- **`ca.key`** - Private CA key (generated locally, gitignored)
-- **`server.key`** - Private server key (generated locally, gitignored)
-- **`server.csr`** - Certificate signing request (temporary, gitignored)
+After generating, restart Mosquitto to pick up the new certs:
+
+```bash
+cd src && docker compose restart mosquitto
+```
 
 ## Production Certificates
 
