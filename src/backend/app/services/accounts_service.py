@@ -1,6 +1,5 @@
 from __future__ import annotations
- 
-from datetime import datetime
+
 from typing import List, Optional
  
 import bcrypt
@@ -220,7 +219,6 @@ class AccountService:
  
             # Generate a temporary password for the new account
             temp_password = secrets.token_urlsafe(12)
-            import bcrypt
             password_hash = bcrypt.hashpw(temp_password.encode(), bcrypt.gensalt()).decode()
  
             cursor.execute(
@@ -299,3 +297,16 @@ class AccountService:
             AuditLogEntry(id=r[0], event_type=r[1], actor_id=r[2], actor_email=r[3],target_id=r[4], target_email=r[5], detail=r[6], created_at=r[7])
             for r in rows
         ]
+
+def write_system_audit_log(event_type: str, actor_email: str, detail: str) -> None:
+    """Write a non-account audit event (thresholds, alerts) to the shared audit_log table."""
+    with db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO audit_log (event_type, actor_email, detail)
+            VALUES (%s, %s, %s)
+            """,
+            (event_type, actor_email, detail),
+        )
+        conn.commit()

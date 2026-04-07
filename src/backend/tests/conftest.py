@@ -74,6 +74,7 @@ def _patch_startup_functions():
         # Demo account seed hits the DB on startup; must be patched or the test
         # client crashes with OperationalError on the fake DB URL.
         patch("app.shared.seed_accounts.seed_demo_accounts"),
+        patch("app.services.accounts_service.write_system_audit_log"),
         patch(
             "app.tasks.aggregation_worker.aggregation_worker",
             _noop_worker,

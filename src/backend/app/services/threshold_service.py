@@ -22,6 +22,7 @@ from typing import Optional
 from app.shared.audit import log_audit_event
 from app.shared.threshold import ThresholdCreate, ThresholdResponse, ThresholdUpdate
 from app.services import threshold_repository
+from app.services.accounts_service import write_system_audit_log
 
 
 class ThresholdService:
@@ -49,6 +50,7 @@ class ThresholdService:
                 "actor": actor_email,
             },
         )
+        write_system_audit_log("threshold.created", actor_email, f"Zone: {created.zone}, Metric: {created.metric}, Value: {created.threshold_value}")
         return created
 
     @staticmethod
@@ -89,6 +91,7 @@ class ThresholdService:
                 "actor": actor_email,
             },
         )
+        write_system_audit_log("threshold.updated", actor_email, f"Threshold {threshold_id} updated: {changes.model_dump(exclude_none=True)}")
         return updated
 
     @staticmethod
@@ -109,6 +112,7 @@ class ThresholdService:
             "threshold.activated",
             details={"threshold_id": threshold_id, "actor": actor_email},
         )
+        write_system_audit_log("threshold.activated", actor_email, f"Threshold {threshold_id} activated")
         return updated
 
     @staticmethod
@@ -129,6 +133,7 @@ class ThresholdService:
             "threshold.deactivated",
             details={"threshold_id": threshold_id, "actor": actor_email},
         )
+        write_system_audit_log("threshold.deactivated", actor_email, f"Threshold {threshold_id} deactivated")
         return updated
 
     @staticmethod
@@ -146,4 +151,5 @@ class ThresholdService:
                 "threshold.deleted",
                 details={"threshold_id": threshold_id, "actor": actor_email},
             )
+        write_system_audit_log("threshold.deleted", actor_email, f"Threshold {threshold_id} deleted")
         return deleted
