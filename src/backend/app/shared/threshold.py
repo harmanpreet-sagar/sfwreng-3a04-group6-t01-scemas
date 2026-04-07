@@ -1,4 +1,4 @@
-"""Pydantic models for the Threshold Management subsystem (Harmanpreet)."""
+"""Pydantic models for threshold management."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Pydantic models for raw sensor readings (Ali — Data Validation)."""
+"""Pydantic models for raw sensor readings."""
 
 from __future__ import annotations
 

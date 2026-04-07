@@ -1,13 +1,10 @@
-"""Alert endpoints: read list/detail and lifecycle (acknowledge / resolve).
+"""
+Alert endpoints — list/filter, single lookup, SSE stream, acknowledge, resolve.
 
-Simple explanation: The website doors for alerts—list them, filter them, watch a live
-stream of changes, and buttons to say “I saw it” or “it is fixed.”
+All routes require OPERATOR or ADMIN (JWT Bearer); unauthenticated callers get 401.
 
-RBAC (aligned with thresholds / SRS):
-  All routes — OPERATOR + ADMIN (JWT Bearer). Unauthenticated callers get 401.
-
-SSE note: Browsers' EventSource cannot set Authorization headers. The dashboard should
-connect with fetch() + ReadableStream, or another client that can send Bearer tokens.
+SSE note: the browser EventSource API cannot set custom headers, so the /stream
+endpoint must be consumed via fetch() + ReadableStream to pass the Bearer token.
 """
 
 from __future__ import annotations

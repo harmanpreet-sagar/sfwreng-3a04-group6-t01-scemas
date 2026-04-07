@@ -19,14 +19,12 @@ from unittest.mock import MagicMock
 os.environ.setdefault("JWT_SECRET", "test-secret-for-pytest-do-not-use-in-prod")
 os.environ.setdefault("SUPABASE_DB_URL", "postgresql://fake:fake@localhost:5432/fake")
 
-# Some modules only exist on certain branches.  Pre-injecting a MagicMock into
-# sys.modules means patch() always has a target regardless of which branch CI
-# is running.  When the real file IS present on this branch, __import__ succeeds
-# and the real module is used instead.
+# If an optional module fails to import, inject a MagicMock so patch() always
+# has a target. When the real module exists, __import__ succeeds and it is used.
 _OPTIONAL_MODULES = [
-    "app.shared.threshold_seed",   # harman branch — default threshold seeding
-    "app.shared.seed_accounts",    # jason branch  — demo account seeding
-    "app.tasks.mqtt_subscriber",   # ali branch    — MQTT background worker
+    "app.shared.threshold_seed",
+    "app.shared.seed_accounts",
+    "app.tasks.mqtt_subscriber",
     "app.tasks.aggregation_worker",
 ]
 for _mod in _OPTIONAL_MODULES:
@@ -64,17 +62,17 @@ def _patch_startup_functions():
 
     Patched side-effects:
       seed_demo_public_api_key   — would hit the DB
-      seed_default_thresholds    — would hit the DB (harman branch)
-      seed_demo_accounts         — would hit the DB (jason branch)
+      seed_default_thresholds    — would hit the DB
+      seed_demo_accounts         — would hit the DB
       aggregation_worker         — long-running polling loop
       threshold_evaluator_worker — long-running polling loop
-      run_mqtt_subscriber        — opens a TLS connection to Mosquitto (ali branch)
+      run_mqtt_subscriber        — opens a TLS connection to Mosquitto
     """
     with (
         patch("app.shared.api_key_seed.seed_demo_public_api_key"),
         patch("app.shared.threshold_seed.seed_default_thresholds"),
-        # Jason's accounts seed — also hits the DB on startup; must be patched
-        # or the test client crashes with OperationalError on the fake DB URL.
+        # Demo account seed hits the DB on startup; must be patched or the test
+        # client crashes with OperationalError on the fake DB URL.
         patch("app.shared.seed_accounts.seed_demo_accounts"),
         patch(
             "app.tasks.aggregation_worker.aggregation_worker",

@@ -1,4 +1,4 @@
-"""Pydantic models for the audit log (Jason)."""
+"""Pydantic models for audit log entries."""
 
 from __future__ import annotations
 

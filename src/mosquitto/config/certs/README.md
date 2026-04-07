@@ -6,7 +6,7 @@
 
 Neither private keys nor public certificates are committed to version control.
 Committing `.crt` files while `.key` files are gitignored causes a key/cert mismatch
-whenever a teammate regenerates the key — all four files must stay in sync locally.
+whenever keys are regenerated on another machine — all four files must stay in sync locally.
 
 ## First-time setup (run once after cloning)
 

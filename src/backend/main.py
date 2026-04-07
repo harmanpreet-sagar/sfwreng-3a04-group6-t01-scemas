@@ -15,12 +15,7 @@ Two registration strategies are used:
                           A missing file logs a warning but never crashes the app.
                           No changes to this file are needed when the PR lands.
 
-Wiring status
-  alerts       ✓ merged (Harmanpreet)
-  thresholds   ✓ merged (Harmanpreet)
-  validation   ✓ merged (Ali)
-  public       ✓ merged (Harmanpreet)
-  accounts     ✓ merged (Jason)
+Registered subsystems: alerts, thresholds, validation, public API, accounts.
 """
 
 from __future__ import annotations
@@ -99,11 +94,12 @@ app = FastAPI(
     description=(
         "Backend API Facade for the SCEMAS Threshold Management System.\n\n"
         "**Subsystems:**\n"
-        "- Alerts (Harmanpreet)\n"
-        "- Threshold Management (Harmanpreet)\n"
-        "- Data Validation (Ali)\n"
-        "- Account Management (Jason)\n"
-        "- Public API (Harmanpreet)\n"
+        "- Alerts\n"
+        "- Threshold management\n"
+        "- Data validation\n"
+        "- Account management\n"
+        "- Public API\n"
+        "- Aggregation management\n"
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -131,15 +127,12 @@ def _try_include_router(module_path: str, label: str) -> None:
     """
     Attempt to import module_path and register its router attribute.
 
-    On ImportError (file not on disk yet, or a dependency missing) the router
-    is skipped and a warning is logged — the rest of the app continues running
-    normally.  When the teammate's PR finally merges, their file appears on disk
-    and the router registers automatically on the next server restart with no
-    changes needed here.
+    On ImportError (module missing or bad dependency) the router is skipped and a
+    warning is logged; the rest of the app keeps running. Once the module exists, a
+    restart registers it without editing this file.
 
-    A broad Exception catch is also present so an unexpected error in a
-    teammate's module-level code (e.g. a syntax error) produces a clear log
-    entry rather than an unhandled exception that kills the whole process.
+    A broad Exception catch logs unexpected import-time errors (e.g. syntax) instead
+    of crashing the whole process.
     """
     try:
         mod = importlib.import_module(module_path)

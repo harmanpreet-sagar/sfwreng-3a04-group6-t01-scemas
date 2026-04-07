@@ -1,45 +1,23 @@
-# Components
+# Components — Reusable UI Components
 
-Reusable UI components used across multiple pages.
+Shared React components composed by page components. Each component handles one focused piece of UI.
 
-## Purpose
+## Files
 
-Small, focused, reusable React components that implement specific UI elements. Components should be composable and follow single-responsibility principle.
-
-## Structure
-
-```tsx
-// Example: ThresholdCard.tsx
-import React from 'react'
-import { Threshold } from '../types/threshold'
-
-interface ThresholdCardProps {
-  threshold: Threshold
-  onEdit: (id: number) => void
-  onDelete: (id: number) => void
-}
-
-export const ThresholdCard: React.FC<ThresholdCardProps> = ({ 
-  threshold, 
-  onEdit, 
-  onDelete 
-}) => {
-  return (
-    <div className="threshold-card">
-      <h3>{threshold.metricType}</h3>
-      <p>Zone: {threshold.zone}</p>
-      <button onClick={() => onEdit(threshold.id)}>Edit</button>
-      <button onClick={() => onDelete(threshold.id)}>Delete</button>
-    </div>
-  )
-}
-```
-
-## Planned Components
-
-- `ThresholdCard.tsx` - Display threshold information
-- `ThresholdForm.tsx` - Form for creating/editing thresholds
-- `ThresholdList.tsx` - List of all thresholds
-- `AlertCard.tsx` - Display alert information
-- `Navigation.tsx` - Top navigation bar
-- `TelemetryChart.tsx` - Real-time telemetry visualization
+| File | Description |
+|------|-------------|
+| `AlertPanel.tsx` | Sidebar panel showing recent unacknowledged alerts in real time |
+| `AlertsBrowserModal.tsx` | Modal for browsing and filtering full alert history |
+| `AggregationHistoryChart.tsx` | Recharts line/bar chart for 5-minute or hourly rollup data |
+| `ConfirmDialog.tsx` | Generic confirmation dialog used for destructive actions |
+| `MetricGauge.tsx` | Circular gauge displaying a current sensor reading vs. threshold |
+| `PipelineHealthIndicator.tsx` | Status indicator showing whether MQTT ingestion is active |
+| `PublicLandingMap.tsx` | Leaflet map rendered on the public landing page with zone markers |
+| `PublicZoneStatusCards.tsx` | Summary cards showing zone health for the public view |
+| `ScemasLogoMark.tsx` | SVG logo mark used in the nav bar |
+| `SeverityBadge.tsx` | Coloured pill badge for alert severity levels (low / medium / high / critical) |
+| `SeverityChart.tsx` | Pie or bar chart breaking down alerts by severity |
+| `ThresholdFormModal.tsx` | Modal form for creating and editing thresholds |
+| `ThresholdTable.tsx` | Sortable table listing all thresholds with edit/delete actions |
+| `ViolationAlertModal.tsx` | Modal that pops when a new critical violation alert arrives via SSE |
+| `ZoneMap.tsx` | Authenticated dashboard map showing live zone status |

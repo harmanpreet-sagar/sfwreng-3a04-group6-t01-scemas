@@ -12,7 +12,7 @@ Usage in route handlers:
     def create_thing(payload: ..., user: CurrentUser = Depends(require_admin)):
         ...  # user.account_id, user.email, user.role are available
 
-JWT payload shape (agreed contract with Jason's login endpoint):
+JWT payload shape (must match POST /account/login):
     { "sub": "<account_id>", "email": "<email>", "role": "ADMIN" | "OPERATOR" }
 
 Algorithm: HS256 (symmetric).  Secret read from JWT_SECRET env var at call time
@@ -176,7 +176,7 @@ def require_operator_or_admin(user: CurrentUser = Depends(_extract_user)) -> Cur
 
 def create_access_token(account_id: int, email: str, role: UserRole) -> str:
     """
-    Sign and return a JWT.  Intended to be called by Jason's POST /account/login.
+    Sign and return a JWT.  Call from POST /account/login after credential check.
 
     The payload carries the three claims that _extract_user expects: sub, email,
     and role.  Tokens have no exp claim for this PoC sprint — add expiry and a

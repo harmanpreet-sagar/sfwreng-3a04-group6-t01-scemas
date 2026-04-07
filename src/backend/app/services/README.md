@@ -1,37 +1,21 @@
-# Services
+# Services — Business Logic and Repository Layer
 
-Business logic layer implementing subsystem operations.
+This package contains the business logic for every SCEMAS subsystem. Services are called by routers and coordinate database access through repository modules.
 
-## Purpose
+## Files
 
-Services encapsulate business logic, coordinate between repositories and external APIs, and implement the core functionality of each subsystem (Threshold Management, Alerts, etc.).
-
-## Structure
-
-```python
-# Example: threshold_service.py
-from ..models.threshold import ThresholdCreate, Threshold
-from .database import supabase
-
-class ThresholdService:
-    @staticmethod
-    async def create(threshold_data: ThresholdCreate) -> Threshold:
-        # Validate business rules
-        # Save to database
-        # Return created threshold
-        pass
-    
-    @staticmethod
-    async def evaluate(telemetry_data: dict) -> list:
-        # Compare telemetry against thresholds
-        # Generate alerts if thresholds violated
-        pass
-```
-
-## Planned Services
-
-- `threshold_service.py` - Threshold CRUD and evaluation logic
-- `alert_service.py` - Alert generation and management
-- `account_service.py` - User authentication and authorization
-- `mqtt_service.py` - MQTT client for telemetry streaming
-- `notification_service.py` - SMS notifications via Twilio
+| File | Description |
+|------|-------------|
+| `accounts_service.py` | Account registration, approval workflow, password hashing |
+| `aggregated_data_repository.py` | DB queries for 5-minute and hourly rollup tables |
+| `aggregation_service.py` | Computes and persists windowed aggregations from raw readings |
+| `alert_repository.py` | DB queries for alert records (insert, fetch, acknowledge) |
+| `alert_service.py` | Alert creation logic; dispatches SSE broadcast and SMS notification |
+| `api_key_repository.py` | DB queries for hashed public API keys |
+| `notification_service.py` | Twilio SMS dispatch for critical alerts |
+| `public_zones_service.py` | Aggregates zone health status for the public map endpoint |
+| `threshold_evaluation.py` | Evaluates a sensor reading against all active thresholds |
+| `threshold_repository.py` | DB queries for threshold records |
+| `threshold_service.py` | Threshold CRUD; delegates evaluation to `threshold_evaluation.py` |
+| `validation_events_repository.py` | DB queries for validation event records |
+| `validation_service.py` | Classifies incoming readings as valid/anomalous; persists events |

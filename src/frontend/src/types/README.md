@@ -1,42 +1,11 @@
-# Types
+# Types — TypeScript Type Definitions
 
-TypeScript type definitions and interfaces.
+Centralised TypeScript interfaces and type aliases shared across the frontend.
 
-## Purpose
+## Files
 
-Centralized type definitions ensure type safety across the application and document the shape of data structures. These types should match the backend API contracts.
+| File | Description |
+|------|-------------|
+| `index.ts` | All shared interfaces: `Alert`, `Threshold`, `Account`, `SensorReading`, `AggregatedDataPoint`, `PublicZone`, `ValidationEvent`, and API response wrappers |
 
-## Structure
-
-```typescript
-// Example: threshold.ts
-export interface Threshold {
-  id: number
-  metricType: string
-  zone: string
-  condition: string
-  severityLevel: 'low' | 'medium' | 'high' | 'critical'
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-}
-
-export interface ThresholdCreate {
-  metricType: string
-  zone: string
-  condition: string
-  severityLevel: string
-}
-
-export interface ThresholdUpdate extends Partial<ThresholdCreate> {
-  id: number
-}
-```
-
-## Planned Type Files
-
-- `threshold.ts` - Threshold entity types
-- `alert.ts` - Alert entity types
-- `user.ts` - User and authentication types
-- `telemetry.ts` - Sensor data types
-- `api.ts` - API response wrapper types
+Keeping all types in a single `index.ts` makes imports predictable (`import type { Alert } from '../types'`) and ensures the frontend's type contracts stay in sync with the backend's Pydantic schemas.

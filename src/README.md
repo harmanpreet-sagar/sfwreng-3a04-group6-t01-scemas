@@ -1,170 +1,147 @@
-# Source Code
+# src — Application Source
 
-## Project Setup
+This directory contains all runnable code for SCEMAS: the FastAPI backend, the React frontend, the Mosquitto MQTT broker configuration, and the Docker Compose orchestration.
 
-### Prerequisites
-
-- Docker Desktop
-- Docker Compose
-- Node.js 20+ (for local development)
-- Python 3.11+ (for local development)
-
-### Quick Start
-
-1. **Clone the repository** and go to the `src` folder (Compose and `start.sh` live here).
-
-   ```bash
-   git clone <repository-url>
-   cd SFWRENG-3A04-Group6-T01/src
-   ```
-
-2. **Configure environment variables** in `src/.env` (Compose reads this file from `src/`).
-
-   ```bash
-   cp .env.example .env
-   # Edit .env — minimum: SUPABASE_DB_URL, JWT_SECRET
-   ```
-
-3. **Start all services** (recommended: script generates MQTT certs if missing, then runs Compose).
-
-   ```bash
-   chmod +x start.sh   # once, if needed
-   ./start.sh
-   ```
-
-   Or invoke Compose yourself from `src/`:
-
-   ```bash
-   docker compose up --build
-   ```
-
-   After the first successful build, faster restarts: `./start.sh --no-build`
-
-4. **Access the application**
-   - **Frontend:** <http://localhost:3000>
-   - **Backend API:** <http://localhost:8000>
-   - **Swagger:** <http://localhost:8000/docs>
-   - **MQTT (TLS):** `localhost:8883`
-
-5. **Frontend CLI** — always run npm from **`frontend/`** (not from `src/`):
-
-   ```bash
-   cd frontend
-   npm install
-   npm run dev      # local Vite dev server (expects API at VITE_API_URL / default localhost:8000)
-   ```
-
-### Project Structure
+## Quick Start
 
 ```bash
-/backend               # FastAPI backend service
-  /app
-    /routers          # API route handlers
-    /models           # Database models
-    /services         # Business logic services
-    /shared           # Shared utilities and helpers
-  main.py             # Application entry point
-  requirements.txt    # Python dependencies
-  Dockerfile          # Backend container configuration
-
-/frontend             # React + TypeScript frontend
-  /src
-    /pages            # Page components
-    /components       # Reusable UI components
-    /types            # TypeScript type definitions
-    /api              # API client functions
-  package.json        # Node.js dependencies
-  Dockerfile          # Frontend container configuration
-
-/mosquitto            # MQTT Broker configuration
-  /config
-    mosquitto.conf    # Broker configuration with TLS
-    /certs            # TLS certificates
-      ca.crt          # Certificate Authority
-      server.crt      # Server certificate
-      server.key      # Server private key
-
-docker-compose.yml    # Multi-service orchestration
-.env                  # Environment variables (not committed)
-.env.example          # Environment variables template
+# From this directory (src/)
+cp .env.example .env          # copy the template
+# Edit .env — set SUPABASE_DB_URL and JWT_SECRET at minimum
+./start.sh                    # generates certs if missing, then runs docker compose up --build
 ```
 
-### Development
+Services come up at:
 
-#### Backend Development
+| Service | URL |
+|---------|-----|
+| Web UI | <http://localhost:3000> |
+| Backend API | <http://localhost:8000> |
+| Swagger UI | <http://localhost:8000/docs> |
+| MQTT (TLS) | localhost:8883 |
+
+To stop: `docker compose down`
+
+## Directory Structure
+
+```bash
+src/
+├── docker-compose.yml          # Wires frontend, backend, and mosquitto together
+├── start.sh                    # Helper script: cert generation + Compose
+├── .env.example                # Environment variable template (copy to .env)
+├── Simulator.py                # Publishes fake sensor readings over MQTT for demos
+│
+├── backend/                    # FastAPI backend (Python 3.11)
+│   ├── main.py                 # App entry point; registers routers and starts workers
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile
+│   ├── pytest.ini
+│   ├── app/
+│   │   ├── routers/            # HTTP route handlers
+│   │   ├── services/           # Business logic and repository layer
+│   │   ├── models/             # Pydantic request/response schemas
+│   │   ├── shared/             # Auth, DB pool, enums, middleware, SSE broadcaster
+│   │   └── tasks/              # Async background workers (MQTT, aggregation, threshold eval)
+│   ├── db/
+│   │   ├── migrations/         # SQL migration files (run in numeric order)
+│   │   └── seeds/              # Demo seed data
+│   ├── tests/                  # pytest test suite
+│   └── scripts/                # One-off operational / demo scripts
+│
+├── frontend/                   # React + TypeScript + Vite (Node 20)
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── index.html
+│   └── src/
+│       ├── App.tsx             # Root component with React Router routes
+│       ├── api/                # Axios client functions (one file per backend resource)
+│       ├── components/         # Reusable UI components
+│       ├── pages/              # Full-page route components
+│       ├── context/            # AuthContext (JWT state)
+│       ├── lib/                # Utilities: AQI calc, metric formatting, SSE client
+│       └── types/              # Shared TypeScript interfaces
+│
+└── mosquitto/
+    └── config/
+        ├── mosquitto.conf      # Broker config (TLS on 8883, auth enabled)
+        ├── passwd              # MQTT credentials (admin/admin123 by default)
+        └── certs/              # TLS certificates — gitignored, generated by start.sh
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SUPABASE_DB_URL` | Yes | PostgreSQL connection string |
+| `JWT_SECRET` | Yes | Secret for signing JWT tokens (`openssl rand -hex 32`) |
+| `DEMO_PUBLIC_API_KEY` | No | Plaintext key seeded into `api_keys` at startup |
+| `TWILIO_SMS_ENABLED` | No | Set `true` to enable SMS on critical alerts |
+| `TWILIO_ACCOUNT_SID` | No | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | No | Twilio auth token |
+| `TWILIO_FROM_NUMBER` | No | Sender phone number (E.164) |
+| `TWILIO_TO_NUMBER` | No | Recipient for critical alert SMS (E.164) |
+| `MQTT_BROKER_HOST` | No | Default: `mosquitto` (Docker service name) |
+| `MQTT_BROKER_PORT` | No | Default: `8883` |
+| `MQTT_USERNAME` | No | Default: `admin` |
+| `MQTT_PASSWORD` | No | Default: `admin123` |
+
+## start.sh Flags
+
+| Flag | Effect |
+|------|--------|
+| *(none)* | Build images if needed and start all services |
+| `--no-build` | Skip image rebuild (faster restart for code-only changes) |
+| `--regen` | Force-regenerate MQTT TLS certificates |
+| `--help` | Show usage |
+
+## Local Development (without Docker)
+
+### Backend
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python main.py
+uvicorn main:app --reload --port 8000
 ```
 
-#### Frontend Development
+Requires PostgreSQL reachable at `SUPABASE_DB_URL` and (optionally) Mosquitto at `MQTT_BROKER_HOST:MQTT_BROKER_PORT`.
+
+### Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev     # Vite dev server — http://localhost:5173
 ```
 
-### MQTT TLS Configuration
+Create `frontend/.env.local` with `VITE_API_URL=http://localhost:8000` if needed.
 
-The project includes self-signed TLS certificates for secure MQTT communication. These are suitable for development but should be replaced with proper certificates in production.
+## Database Migrations
 
-To regenerate certificates:
+SQL migration files live in `backend/db/migrations/` and are numbered. Run them in order against your Supabase database, or use the top-level helper:
 
 ```bash
-cd mosquitto/config/certs
-openssl req -new -x509 -days 365 -extensions v3_ca -keyout ca.key -out ca.crt -subj "/C=CA/ST=Ontario/L=Hamilton/O=McMaster/OU=SFWRENG3A04/CN=MosquittoCA" -nodes
-openssl genrsa -out server.key 2048
-openssl req -new -key server.key -out server.csr -subj "/C=CA/ST=Ontario/L=Hamilton/O=McMaster/OU=SFWRENG3A04/CN=mosquitto"
-openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365
+cd ..
+./scripts/apply_backend_migrations.sh
 ```
 
-### Environment Variables
-
-Copy `.env.example` to `.env` and configure:
-
-- **SUPABASE_URL**: Your Supabase project URL
-- **SUPABASE_DB_URL**: Direct database connection string
-- **DEMO_PUBLIC_API_KEY** (optional): Plaintext demo key seeded into `api_keys` at startup (hashed in DB). If unset, a fixed dev default from `backend/app/shared/api_key_seed.py` is used. Apply `backend/db/migrations/002_create_api_keys.sql` before expecting the seed to succeed.
-- **JWT_SECRET**: Secret key for JWT token signing
-- **TWILIO_ACCOUNT_SID**: Twilio account identifier
-- **TWILIO_AUTH_TOKEN**: Twilio authentication token
-- **TWILIO_FROM_NUMBER**: Phone number for sending SMS
-- **TWILIO_TO_NUMBER**: Default recipient phone number
-- **MQTT_BROKER_HOST**: MQTT broker hostname (default: mosquitto)
-- **MQTT_BROKER_PORT**: MQTT broker port (default: 8883)
-
-### Docker Commands
-
-Run these from the `src/` directory (where `docker-compose.yml` lives). Prefer Compose v2: `docker compose`.
+## Running Tests
 
 ```bash
-# Start all services (detached)
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop all services
-docker compose down
-
-# Rebuild and start
-docker compose up --build
-
-# Stop and remove volumes
-docker compose down -v
+cd backend
+source venv/bin/activate
+pytest
 ```
 
-### API Documentation
+## Sensor Simulator
 
-Once the backend is running, visit <http://localhost:8000/docs> for interactive API documentation (Swagger UI).
+`Simulator.py` publishes synthetic sensor readings to the MQTT broker, which triggers the full ingestion → validation → threshold evaluation → alert pipeline. Useful for demos without real hardware.
 
-## Team
-
-**Harmanpreet** - Threshold Management + DevOps + API Facade
-
-Group 6 - Tutorial 01
+```bash
+# Broker must be running first
+python Simulator.py
+```
