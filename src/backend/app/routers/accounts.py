@@ -1,5 +1,5 @@
 """
-Account Management router.
+Account Management router
 
 JWT integration (added in this PR):
   The login endpoint was extended to issue a signed JWT after successful
@@ -26,8 +26,7 @@ Token security:
 
 Dependency stubs:
   get_current_account and require_admin use account_dependencies.py which
-  contains a proof-of-concept stub. Jason's full RBAC implementation will
-  replace these when his PR is merged.
+  contains a proof-of-concept stub.
 """
 
 from __future__ import annotations
@@ -80,8 +79,6 @@ def login(body: LoginRequest) -> LoginResponse:
     account = result["account"]
 
     # Map DB clearance ("admin" / "operator") to the UserRole enum ("ADMIN" / "OPERATOR")
-    # expected by create_access_token. The DB stores lowercase; the enum uses uppercase.
-    # Unknown clearance values fall back to operator (least privilege).
     try:
         user_role = UserRole(account.clearance.upper())
     except ValueError:
@@ -95,9 +92,6 @@ def login(body: LoginRequest) -> LoginResponse:
             role=user_role,
         )
     except RuntimeError:
-        # JWT_SECRET is missing from the environment. The login response still
-        # includes the account profile so the frontend can surface a useful error
-        # rather than a generic 500. All subsequent protected API calls will 401.
         logger.warning("JWT_SECRET not set — login response will not include access_token")
 
     return LoginResponse(

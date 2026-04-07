@@ -53,7 +53,7 @@ class AccountService:
             aid = row[0]
             password_hash = row[7]
  
-            print(f"[AUTH] Verifying password for aid={aid} (POC: bcrypt check)")
+            print(f"[AUTH] Verifying password for aid={aid}")
             if not bcrypt.checkpw(password.encode(), password_hash.encode()):
                 print(f"[AUTH] Login failed — incorrect password for: {email}")
                 _write_audit_log(cursor, "login_failure", actor_id=aid, actor_email=email, detail="Incorrect password")
@@ -200,7 +200,7 @@ class AccountService:
         """
         Approve a pending request:
         1. Fetch the request
-        2. Create an account from it (random temp password — POC)
+        2. Create an account from it (random temp password)
         3. Delete the request
         4. Log request_approved to audit_log
         """
