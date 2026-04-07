@@ -12,7 +12,7 @@ Usage in route handlers:
     def create_thing(payload: ..., user: CurrentUser = Depends(require_admin)):
         ...  # user.account_id, user.email, user.role are available
 
-JWT payload shape (agreed contract with Jason's login endpoint):
+JWT payload shape (must match POST /account/login):
     { "sub": "<account_id>", "email": "<email>", "role": "ADMIN" | "OPERATOR" }
 
 Algorithm: HS256 (symmetric).  Secret read from JWT_SECRET env var at call time
@@ -21,8 +21,11 @@ so a key rotation only requires an env change and a restart.
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -63,6 +66,7 @@ def _decode_token(token: str) -> dict:
     try:
         return jwt.decode(token, _get_jwt_secret(), algorithms=[_ALGORITHM])
     except JWTError as exc:
+        logger.warning("[AUTH DEBUG] 401: invalid_token — %s", exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error": "invalid_token", "message": str(exc)},
@@ -103,6 +107,7 @@ def _extract_user(
     DB stores account ids as integers.
     """
     if credentials is None:
+        logger.warning("[AUTH DEBUG] 401: missing Authorization header entirely")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
@@ -171,7 +176,7 @@ def require_operator_or_admin(user: CurrentUser = Depends(_extract_user)) -> Cur
 
 def create_access_token(account_id: int, email: str, role: UserRole) -> str:
     """
-    Sign and return a JWT.  Intended to be called by Jason's POST /account/login.
+    Sign and return a JWT.  Call from POST /account/login after credential check.
 
     The payload carries the three claims that _extract_user expects: sub, email,
     and role.  Tokens have no exp claim for this PoC sprint — add expiry and a

@@ -1,44 +1,16 @@
-# API Client
+# API — Backend API Client
 
-HTTP client functions for communicating with the backend API.
+Axios-based functions that call the FastAPI backend. Each file maps to one backend router. All calls go through the shared `client.ts` instance which automatically attaches the JWT `Authorization` header.
 
-## Purpose
+## Files
 
-Centralized API calls using axios. Each file exports functions that correspond to backend endpoints, providing a clean interface for data fetching and mutations.
-
-## Structure
-
-```typescript
-// Example: thresholds.ts
-import axios from 'axios'
-import { Threshold, ThresholdCreate } from '../types/threshold'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-
-export const thresholdApi = {
-  // Get all thresholds
-  async getAll(): Promise<Threshold[]> {
-    const response = await axios.get(`${API_URL}/api/thresholds`)
-    return response.data
-  },
-
-  // Create new threshold
-  async create(data: ThresholdCreate): Promise<Threshold> {
-    const response = await axios.post(`${API_URL}/api/thresholds`, data)
-    return response.data
-  },
-
-  // Delete threshold by ID
-  async delete(id: number): Promise<void> {
-    await axios.delete(`${API_URL}/api/thresholds/${id}`)
-  },
-}
-```
-
-## Planned API Files
-
-- `thresholds.ts` - Threshold CRUD operations
-- `alerts.ts` - Alert fetching and management
-- `auth.ts` - Login, logout, token refresh
-- `telemetry.ts` - Telemetry data queries
-- `mqtt.ts` - MQTT connection management
+| File | Backend router | Description |
+|------|---------------|-------------|
+| `client.ts` | — | Configured axios instance; reads `VITE_API_URL`; attaches JWT from `localStorage` |
+| `auth.ts` | `/accounts/login` | Login, logout, token refresh |
+| `accounts.ts` | `/accounts` | Account CRUD, registration request submission, admin approval |
+| `alerts.ts` | `/alerts` | Fetch alert list, acknowledge alerts |
+| `aggregation.ts` | `/aggregation` | Fetch 5-minute and hourly rollup data |
+| `thresholds.ts` | `/thresholds` | Threshold CRUD |
+| `validation.ts` | `/validation` | Fetch validation event log |
+| `publicZones.ts` | `/public/zones` | Public zone status (uses `VITE_PUBLIC_DEMO_API_KEY` header) |

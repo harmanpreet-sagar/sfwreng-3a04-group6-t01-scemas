@@ -1,30 +1,22 @@
-# Routers
+# Routers — HTTP Route Handlers
 
-API route handlers for different subsystems.
+Each file in this package defines a FastAPI `APIRouter` for one functional subsystem. Routers validate incoming requests, delegate to the service layer, and format responses. All routers are registered in `backend/main.py`.
 
-## Purpose
+## Files
 
-Each router file defines HTTP endpoints for a specific functional area. Routers handle request validation, call service layer functions, and format responses.
+| File | Prefix | Description |
+|------|--------|-------------|
+| `accounts.py` | `/accounts` | User account CRUD, admin approval/rejection of registration requests |
+| `aggregation.py` | `/aggregation` | Queries for 5-minute and hourly aggregated sensor rollups |
+| `alerts.py` | `/alerts` | Alert listing, acknowledgement, and SSE stream for live alert push |
+| `public_demo.py` | `/public/demo` | Unauthenticated demo endpoints (no API key required) |
+| `public_zones.py` | `/public/zones` | Zone status for the public landing map (API key protected, rate-limited) |
+| `thresholds.py` | `/thresholds` | Threshold CRUD (create, read, update, delete, toggle active) |
+| `validation.py` | `/validation` | Data validation event log queries |
 
-## Structure
+## Conventions
 
-```python
-# Example: thresholds.py
-from fastapi import APIRouter, HTTPException, Depends
-from ..services.threshold_service import ThresholdService
-from ..models.threshold import ThresholdCreate, ThresholdResponse
-
-router = APIRouter(prefix="/api/thresholds", tags=["Thresholds"])
-
-@router.post("/", response_model=ThresholdResponse)
-async def create_threshold(threshold: ThresholdCreate):
-    # Call service layer
-    return await ThresholdService.create(threshold)
-```
-
-## Planned Routers
-
-- `thresholds.py` - Threshold CRUD operations
-- `alerts.py` - Alert management endpoints
-- `accounts.py` - User account operations
-- `dashboard.py` - Dashboard data aggregation
+- All protected routes use `Depends(get_current_user)` from `shared/auth.py` for JWT verification.
+- Public API routes use `Depends(verify_public_api_key)` from `shared/deps_public_api.py`.
+- Routers use `async def` handlers throughout
+- Database calls go through the async pool in `shared/db.py`.

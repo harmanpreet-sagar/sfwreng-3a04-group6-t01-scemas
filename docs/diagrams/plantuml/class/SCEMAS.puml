@@ -4,6 +4,12 @@ scale 0.4
 skinparam nodesep 50
 skinparam ranksep 70
 
+' Legend for change markers:
+'   #FFD0D0 background = new class (did not exist in original)
+'   ##[bold]red border = existing class whose fields or methods changed
+'   -[#red,bold]->     = new relationship (did not exist in original)
+' Classes that only received a stereotype label are NOT marked red.
+
 ' =============================================================
 ' SHARED TYPES
 ' =============================================================
@@ -68,25 +74,48 @@ Alert           --> AlertStatus
 
 ' =============================================================
 ' PACKAGE: PRESENTATION LAYER (PAC)
+'
+' PAC triad for the top-level SCEMAS agent:
+'   P (Presentation) — *Agent boundary classes
+'   A (Abstraction)  — RecentActivityCache  [NEW]
+'   C (Control)      — APIFacade
 ' =============================================================
-package "Presentation Layer" {
+package "Presentation Layer (PAC)" {
 
-  class AccountAdminAgent {
+  ' Unchanged content — stereotype label only added, not red
+  class AccountAdminAgent <<Presentation>> {
     +initiateAccountOperation(req : Request)
   }
 
-  class ThresholdAdminAgent {
+  class ThresholdAdminAgent <<Presentation>> {
     +initiateThresholdOperation(req : Request)
   }
 
-  class DashboardAgent {
+  class DashboardAgent <<Presentation>> {
     +displayData(data : Map)
     +displayAlert(alert : Alert)
     +displayAlerts()
     +refreshView()
   }
 
-  class APIFacade {
+  ' NEW — was missing from original diagram despite being present
+  ' in the D2 architecture diagram as "Recent Activity Cache".
+  ' Holds UI-visible state so no Presentation class ever queries
+  ' a backend subsystem directly.
+  ' Maps to AuthContext + local React state in the frontend.
+  class RecentActivityCache <<Abstraction>> #FFD0D0 {
+    -cachedAlerts : List
+    -cachedThresholds : List
+    -lastUpdated : DateTime
+    +getAlerts() : List
+    +getThresholds() : List
+    +updateAlerts(alerts : List)
+    +updateThresholds(thresholds : List)
+    +invalidate()
+  }
+
+  ' Unchanged content — stereotype label only added, not red
+  class APIFacade <<Control>> {
     -req : Request
     -result : Result
     -resp : Response
@@ -117,7 +146,6 @@ package "Presentation Layer" {
   interface IAlertsService {
     -data : Map
     -violation : Map
-    +evaluateTelemetry(data : Map)
     +generateAlert(violation : Map) : Alert
     +updateAlertStatus(id : int, status : String)
   }
@@ -132,20 +160,25 @@ package "Presentation Layer" {
   ThresholdAdminAgent --> APIFacade
   DashboardAgent      --> APIFacade
 
+  ' NEW — completing the PAC C<->A and A->P wiring
+  APIFacade           -[#red,bold]-> RecentActivityCache
+  RecentActivityCache -[#red,bold]-> DashboardAgent
+
   APIFacade --> IThresholdService
   APIFacade --> IAccountService
   APIFacade --> IAlertsService
   APIFacade --> IAggregationService
 
-  APIFacade         ..> Request
-  APIFacade         ..> Result
-  APIFacade         ..> Response
-  APIFacade         ..> successResponse
-  APIFacade         ..> errorResponse
-  AccountAdminAgent ..> Request
+  APIFacade           ..> Request
+  APIFacade           ..> Result
+  APIFacade           ..> Response
+  APIFacade           ..> successResponse
+  APIFacade           ..> errorResponse
+  AccountAdminAgent   ..> Request
   ThresholdAdminAgent ..> Request
-  DashboardAgent    ..> Alert
-  IAlertsService    ..> Alert
+  DashboardAgent      ..> Alert
+  IAlertsService      ..> Alert
+  RecentActivityCache ..> Alert
 }
 
 ' =============================================================
@@ -203,11 +236,11 @@ package "Account Management" {
     +findAll() : List
   }
 
-  entity Account {
+  ' MODIFIED — removed age and address: neither field exists in
+  ' 019_create_accounts.sql, AccountResponse, or any Pydantic model.
+  entity Account ##[bold]red {
     -aid : int
     -name : String
-    -age : int
-    -address : String
     -email : String
     -password : String
     -clearance : String
@@ -332,21 +365,64 @@ package "Threshold Management" {
 ' =============================================================
 package "Alerts Management" {
 
-  class AlertsManagement {
+  ' NEW — replaces the direct arrow AlertsManagement -> ThresholdDB.
+  ' ThresholdEvaluatorWorker depends on this interface only;
+  ' the concrete ThresholdDB lives in Threshold Management.
+  class IThresholdRepository <<external>> #FFD0D0 {
+    +getActiveThresholdRules() : List
+  }
+
+  ' NEW — replaces the direct arrow AlertsManagement -> AggregatedEnvironmentalDataDB.
+  class IAggregatedDataRepository <<external>> #FFD0D0 {
+    +getAggregatedEnvironmentalData(zoneId : String, metric : String) : List
+  }
+
+  ' NEW — maps to threshold_evaluator_worker.py + threshold_evaluation.py.
+  ' Background asyncio task that polls every 5 s, checks the latest
+  ' aggregated value per zone/metric against every active threshold,
+  ' and calls AlertsManagement.createAlert() on breach.
+  ' Absorbs evaluateThresholdViolations() and detectAnomalousTrends()
+  ' that were incorrectly placed on AlertsManagement in the original.
+  class ThresholdEvaluatorWorker #FFD0D0 {
+    -intervalSeconds : int
+    +runEvaluationCycle()
+    +isThresholdBreached(condition : String, observed : float, limit : float) : Boolean
+  }
+
+  ' NEW — maps to alert_sse_broadcaster.py (AlertSSEBroadcaster class).
+  ' Thread-safe in-memory fan-out; publishes alert.created /
+  ' alert.acknowledged / alert.resolved events to all connected
+  ' dashboard SSE clients without coupling AlertsManagement to
+  ' DashboardAgent directly.
+  class AlertSSEBroadcaster #FFD0D0 {
+    -subscriberQueues : Set
+    +subscribe() : Queue
+    +unsubscribe(q : Queue)
+    +publish(event : Map)
+    +stream(request : Request)
+  }
+
+  ' MODIFIED — methods realigned with AlertService in alert_service.py.
+  ' Removed: evaluateTelemetry, generateAlert, evaluateThresholdViolations,
+  '          detectAnomalousTrends (these belong to ThresholdEvaluatorWorker)
+  ' Added:   acknowledgeAlert, resolveAlert, listAlerts, getAlertById,
+  '          activeAlertExistsForZoneMetric (all in AlertService)
+  class AlertsManagement ##[bold]red {
     -data : Map
-    -violation : Map
-    +evaluateTelemetry(data : Map)
-    +generateAlert(violation : Map) : Alert
-    +updateAlertStatus(id : int, status : String)
-    +evaluateThresholdViolations()
-    +detectAnomalousTrends()
     +createAlert(alert : Alert)
+    +acknowledgeAlert(id : int)
+    +resolveAlert(id : int)
+    +listAlerts(status : String, zone : String, severity : String) : List
+    +getAlertById(id : int) : Alert
+    +activeAlertExistsForZoneMetric(zone : String, metric : String) : Boolean
     +publishAlertUpdate(alert : Alert)
   }
 
-  class NotificationService {
-    +sendAlertCreated(alert : Alert)
-    +sendStatusChangeNotification(alert : Alert)
+  ' MODIFIED — sendStatusChangeNotification() removed: it does not
+  ' exist in notification_service.py. Only
+  ' send_critical_alert_sms_if_configured() exists (Twilio, critical only).
+  class NotificationService ##[bold]red {
+    +sendCriticalAlertSms(alert : Alert)
   }
 
   entity AlertsDB {
@@ -356,16 +432,37 @@ package "Alerts Management" {
     +getHistoricalAlerts() : List
   }
 
-  AlertsManagement  --> AlertsDB
-  AlertsManagement  --> NotificationService
-  AlertsDB          --> Alert
+  ' NEW relationships
+  AlertsManagement -[#red,bold]-> AlertSSEBroadcaster
+  AlertsManagement               --> AlertsDB
+  AlertsManagement               --> NotificationService
+
+  ThresholdEvaluatorWorker -[#red,bold]-> IThresholdRepository
+  ThresholdEvaluatorWorker -[#red,bold]-> IAggregatedDataRepository
+  ThresholdEvaluatorWorker -[#red,bold]-> AlertsManagement
+
+  AlertsDB            --> Alert
   NotificationService ..> Alert
+  AlertSSEBroadcaster ..> Alert
 }
 
 ' =============================================================
 ' PACKAGE: DATA VALIDATION
 ' =============================================================
 package "Data Validation" {
+
+  ' NEW — maps to mqtt_subscriber.py.
+  ' Connects to Mosquitto over TLS, subscribes to scemas/sensors/#,
+  ' and hands each decoded JSON payload to DataValidationManagement.
+  class MqttSubscriber #FFD0D0 {
+    -host : String
+    -port : int
+    -topic : String
+    +connect()
+    +onConnect()
+    +onMessage(msg : Map)
+    +onDisconnect()
+  }
 
   interface IValidationComponent {
     +execute()
@@ -415,6 +512,8 @@ package "Data Validation" {
     +getDetails() : Map
   }
 
+  ' NEW relationship
+  MqttSubscriber           -[#red,bold]-> DataValidationManagement
   IValidationComponent     <|.. EnsureMQTTCompliance
   IValidationComponent     <|.. SensorMonitor
   IValidationComponent     <|.. StoreValidatedData
@@ -547,47 +646,23 @@ package "API Management" {
 ' CROSS-SUBSYSTEM CONNECTIONS
 ' =============================================================
 
-' Implementation arrows — direction controls package placement
 ThresholdManagement   -down-|>  IThresholdService
 AccountManagement     -right-|> IAccountService
 AggregationManagement -up-|>    IAggregationService
 AlertsManagement      -left-|>  IAlertsService
 
-' Hidden anchors to cluster related packages together
-' Threshold <-> Alerts (share ThresholdDB)
-ThresholdManagement -[hidden]down- AlertsManagement
-
-' Data Validation <-> Aggregation (share ValidSensorDataDB)
+' Layout anchors
+ThresholdManagement      -[hidden]down-  AlertsManagement
 DataValidationManagement -[hidden]right- AggregationManagement
+AggregationManagement    -[hidden]right- APIManagement
 
-' Aggregation <-> API (share AggregatedEnvironmentalDataDB)
-AggregationManagement -[hidden]right- APIManagement
+' MODIFIED — previously pointed directly to DashboardAgent (a
+' Presentation component). Now routes through APIFacade so no
+' backend subsystem holds a direct reference to a P class.
+ShowDataToDashboards -[#red,bold]up-> APIFacade
+NotificationService  -[#red,bold]up-> APIFacade
 
-' ShowDataToDashboards pushes to DashboardAgent
-ShowDataToDashboards -up-> DashboardAgent
-
-' NotificationService pushes alerts to DashboardAgent
-NotificationService -up-> DashboardAgent
-
-' AlertsManagement reads ThresholdDB — short hop, adjacent package
-AlertsManagement -up-> ThresholdDB
-
-' AlertsManagement reads AggregatedEnvironmentalDataDB
-AlertsManagement -down-> AggregatedEnvironmentalDataDB
-
-' AlertsManagement reads ValidSensorDataDB
-AlertsManagement -down-> ValidSensorDataDB
-
-' AlertsManagement notifies APIFacade
-AlertsManagement -left-> APIFacade
-
-' PerformAggregations reads ValidSensorDataDB — adjacent package
-PerformAggregations -left-> ValidSensorDataDB
-
-' APIManagement reads aggregated data — adjacent package
 APIManagement -left-> AggregatedEnvironmentalDataDB
-
-' ThresholdDB feeds AlertsManagement
-ThresholdDB -down-> AlertsManagement
+PerformAggregations -left-> ValidSensorDataDB
 
 @enduml

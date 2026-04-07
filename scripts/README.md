@@ -1,59 +1,51 @@
-# Scripts
+# Scripts — Developer Utility Scripts
 
-Utility scripts for development, deployment, and maintenance tasks.
+Utility scripts for development setup, certificate management, database migrations, and diagram compilation.
 
-## Purpose
+## Scripts
 
-Automate common tasks like certificate generation, database migrations, diagram compilation, and deployment procedures.
+### `setup_dev.sh`
 
-## Planned Scripts
+First-time development environment setup. Installs dependencies and prepares the workspace.
 
-### Development Scripts
-
-**`setup_dev.sh`** - Initial development environment setup
 ```bash
-#!/bin/bash
-# Install dependencies, generate certificates, create .env from template
+./scripts/setup_dev.sh
 ```
 
-**`compile_diagrams.sh`** - Batch compile all PlantUML diagrams
+### `generate_certs.sh`
+
+Generates self-signed TLS certificates for the Mosquitto MQTT broker. Called automatically by `src/start.sh` when certificates are missing, but can be run manually to force-regenerate them.
+
 ```bash
-#!/bin/bash
-# Convert all .puml files to PNG images in docs/diagrams/compiled/
+./scripts/generate_certs.sh
 ```
 
-### Certificate Management
+Certificates are written to `src/mosquitto/config/certs/` (gitignored).
 
-**`generate_certs.sh`** - Regenerate MQTT TLS certificates
+### `apply_backend_migrations.sh`
+
+Applies all SQL migration files in `src/backend/db/migrations/` to the database in numeric order. Run this against a fresh database before starting the backend for the first time.
+
 ```bash
-#!/bin/bash
-# Generate new self-signed certificates for Mosquitto broker
+./scripts/apply_backend_migrations.sh
 ```
 
-### Database Scripts
+Requires `SUPABASE_DB_URL` to be set in `src/.env`.
 
-**`migrate_db.py`** - Run database migrations
-```python
-# Apply schema changes to Supabase database
-```
+### `compile_diagrams.sh`
 
-**`seed_db.py`** - Populate database with test data
-```python
-# Insert sample thresholds, users, and telemetry for testing
-```
+Batch-compiles all PlantUML source files under `docs/diagrams/plantuml/` to PNG images, writing output to `docs/diagrams/compiled/`.
 
-### Deployment Scripts
-
-**`deploy.sh`** - Production deployment automation
 ```bash
-#!/bin/bash
-# Build Docker images, push to registry, deploy to server
+./scripts/compile_diagrams.sh
 ```
+
+Requires `plantuml` to be installed and on `PATH`.
 
 ## Usage
 
 Make scripts executable before running:
+
 ```bash
 chmod +x scripts/*.sh
-./scripts/setup_dev.sh
 ```

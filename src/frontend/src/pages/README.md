@@ -1,35 +1,13 @@
-# Pages
+# Pages — Route-Level Page Components
 
-Full-page components representing different routes in the application.
+Each file in this directory corresponds to a top-level route defined in `App.tsx`. Pages compose smaller components from `components/` and call the API layer from `api/`.
 
-## Purpose
+## Files
 
-Each page component corresponds to a distinct view/route in the application. Pages compose smaller components and handle page-level state management.
-
-## Structure
-
-```tsx
-// Example: ThresholdManagement.tsx
-import React from 'react'
-import { ThresholdList } from '../components/ThresholdList'
-import { ThresholdForm } from '../components/ThresholdForm'
-
-export const ThresholdManagement: React.FC = () => {
-  return (
-    <div className="page-container">
-      <h1>Threshold Management</h1>
-      <ThresholdForm />
-      <ThresholdList />
-    </div>
-  )
-}
-```
-
-## Planned Pages
-
-- `Dashboard.tsx` - Main dashboard with telemetry visualizations
-- `ThresholdManagement.tsx` - Threshold CRUD interface
-- `AlertsView.tsx` - Alert history and management
-- `Login.tsx` - User authentication page
-- `AccountPage.tsx` - Account management page
-- `RegisterRequests.tsx` - Request accounts page
+| File | Route | Description |
+|------|-------|-------------|
+| `LandingPage.tsx` | `/` | Public zone map showing sensor health; visible without login |
+| `LoginPage.tsx` | `/login` | Username/password login form; stores JWT in `AuthContext` |
+| `RegisterRequestPage.tsx` | `/register` | New-user registration request form (requires admin approval) |
+| `AccountPage.tsx` | `/account` | View and edit the logged-in user's profile; admins can manage all accounts |
+| `ThresholdsPage.tsx` | `/thresholds` | Threshold CRUD dashboard with live alert panel and severity charts |

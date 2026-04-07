@@ -2,16 +2,25 @@
 title Data Validation
 
 ' ─── External stubs ──────────────────────────────────────────
-' ValidSensorDataDB is consumed by Aggregation and Alerts
+' ValidSensorDataDB is consumed by Aggregation
 class PerformAggregations <<external>> {
   +computeAggregatedMetrics(data : Map) : AggregatedData
 }
 
-class AlertsManagement <<external>> {
-  +evaluateTelemetry(data : Map)
+' ─── Own classes ─────────────────────────────────────────────
+' NEW — maps to mqtt_subscriber.py.
+' Connects to Mosquitto over TLS, subscribes to scemas/sensors/#,
+' and hands each decoded JSON payload to DataValidationManagement.
+class MqttSubscriber #FFD0D0 {
+  -host : String
+  -port : int
+  -topic : String
+  +connect()
+  +onConnect()
+  +onMessage(msg : Map)
+  +onDisconnect()
 }
 
-' ─── Own classes ─────────────────────────────────────────────
 interface IValidationComponent {
   +execute()
 }
@@ -62,9 +71,10 @@ entity EventLog {
 
 ' ─── Cross-subsystem connections ─────────────────────────────
 ValidSensorDataDB --> PerformAggregations
-ValidSensorDataDB --> AlertsManagement
 
 ' ─── Internal relationships ──────────────────────────────────
+' NEW — MqttSubscriber is the entry point for the validation pipeline
+MqttSubscriber           -[#red,bold]-> DataValidationManagement
 IValidationComponent     <|.. EnsureMQTTCompliance
 IValidationComponent     <|.. SensorMonitor
 IValidationComponent     <|.. StoreValidatedData

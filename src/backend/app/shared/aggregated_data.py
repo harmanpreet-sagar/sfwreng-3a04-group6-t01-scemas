@@ -1,4 +1,4 @@
-"""Pydantic models for the Aggregation Management subsystem (Praneet)."""
+"""Pydantic models for aggregated environmental data."""
 
 from __future__ import annotations
 

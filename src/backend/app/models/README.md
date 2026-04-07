@@ -1,37 +1,12 @@
-# Models
+# Models — Pydantic API Models
 
-Pydantic models for request/response validation and database schemas.
+Pydantic models used as request/response schemas for the public-facing API endpoints.
 
-## Purpose
+## Files
 
-Define data structures, validation rules, and type hints for API contracts and database entities.
+| File | Description |
+|------|-------------|
+| `public_api_key.py` | Request and response models for public API key management |
+| `public_zone.py` | Response model for public zone status (used by the landing map) |
 
-## Structure
-
-```python
-# Example: threshold.py
-from pydantic import BaseModel, Field
-from datetime import datetime
-
-class ThresholdBase(BaseModel):
-    metric_type: str
-    zone: str
-    condition: str
-    severity_level: str
-
-class ThresholdCreate(ThresholdBase):
-    pass
-
-class ThresholdResponse(ThresholdBase):
-    id: int
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-```
-
-## Planned Models
-
-- `threshold.py` - Threshold entity and validation
-- `alert.py` - Alert entity
-- `user.py` - User account entity
-- `telemetry.py` - Sensor data models
+Most application-wide schemas (alerts, thresholds, sensor readings, accounts, etc.) live in `app/shared/` alongside the code that uses them, following the co-location convention adopted by this project.

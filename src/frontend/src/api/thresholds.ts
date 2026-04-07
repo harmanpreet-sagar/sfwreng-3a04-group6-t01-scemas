@@ -5,7 +5,7 @@
  *  - All functions use the shared apiClient which already carries the Bearer
  *    token set at login, so no manual auth handling is needed here.
  *  - activate / deactivate are intentionally separate endpoints (not a field
- *    on PATCH /threshold/{id}) because Aakash's backend writes an audit log
+ *    on PATCH /threshold/{id}) because the backend writes an audit log
  *    entry for every active-state transition. Routing through dedicated
  *    sub-paths makes those log entries unambiguous.
  *  - ThresholdUpdate (used by updateThreshold) deliberately omits is_active —

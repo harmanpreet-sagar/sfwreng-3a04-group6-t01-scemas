@@ -1,4 +1,4 @@
-"""Pydantic models for validation events and status (Ali — Data Validation)."""
+"""Pydantic models for validation events and status summaries."""
 
 from __future__ import annotations
 

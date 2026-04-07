@@ -1,7 +1,7 @@
 """
 Idempotent startup seed for the three default thresholds.
 
-These rows need to exist before Aakash's threshold evaluator worker can run
+These rows need to exist before the threshold evaluator worker can run
 a meaningful evaluation cycle.  The seed only fires when the
 `public.thresholds` table is completely empty, so it never overwrites
 thresholds an operator has already configured.

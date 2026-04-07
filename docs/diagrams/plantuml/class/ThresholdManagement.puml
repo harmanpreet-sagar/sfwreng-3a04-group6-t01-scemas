@@ -16,9 +16,6 @@ interface IThresholdService <<external>> {
   +processAction(action : String, data : Map)
 }
 
-class AlertsManagement <<external>> {
-}
-
 ' ─── Own classes ─────────────────────────────────────────────
 class HighLevelUI {
   -thresholdList : List
@@ -102,10 +99,9 @@ entity Threshold {
 }
 
 ' ─── Cross-subsystem connections ─────────────────────────────
-ThresholdAdminAgent   --> APIFacade
-APIFacade             --> IThresholdService
-ThresholdManagement   ..|> IThresholdService
-ThresholdDB           --> AlertsManagement
+ThresholdAdminAgent --> APIFacade
+APIFacade           --> IThresholdService
+ThresholdManagement ..|> IThresholdService
 
 ' ─── Internal relationships ──────────────────────────────────
 HighLevelUI         --> ThresholdManagement

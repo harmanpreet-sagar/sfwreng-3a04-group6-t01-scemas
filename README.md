@@ -1,133 +1,287 @@
-# SFWRENG 3A04 - Group 6 - Tutorial 01
+# SCEMAS — Smart Campus Environmental Monitoring and Alert System
 
-Software Design III Project Repository
+**Course:** SFWRENG 3A04 - Software Design III | McMaster University | Winter 2026  
+**Group:** Group 6 - Tutorial 01
 
-## Course Information
+## What We Built
 
-**Course:** SFWRENG 3A04 - Software Design III  
-**Term:** Winter 2026  
-**Institution:** McMaster University
+SCEMAS is a full-stack environmental monitoring platform that ingests real-time sensor telemetry over MQTT, evaluates configurable alert thresholds, and streams live alerts to a web dashboard. The system supports JWT-authenticated user accounts, Twilio SMS notifications for critical alerts, aggregated historical data with charted rollups, a data validation pipeline, and a public-facing API with rate-limited API key access and an interactive zone map.
 
-## Team
+### Tech Stack
 
-Group 6 - Tutorial 01
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Leaflet, Recharts |
+| Backend | FastAPI (Python 3.11), asyncio background workers |
+| Messaging | Eclipse Mosquitto MQTT broker (TLS on port 8883) |
+| Database | PostgreSQL via Supabase |
+| Auth | JWT (python-jose) + bcrypt passwords |
+| Notifications | Twilio SMS (optional) |
+| Container | Docker Compose |
 
-### Members
+### Team
 
-- Aakash Satishkumar
-- Ali Shareeff
-- Harmanpreet Singh Sagar
-- Jason Kim
-- Praneet Singh
+| Member | Subsystems |
+|--------|-----------|
+| Aakash Satishkumar | Alerts Management, API Management |
+| Ali Shareeff | Data Validation |
+| Harmanpreet Singh Sagar | Threshold Management, API Facade, DevOps |
+| Jason Kim | Account Management, Public API |
+| Praneet Singh | Aggregation Management |
+
+---
 
 ## Project Structure
 
 ```bash
-├── docs/                     # All documentation and design artifacts
-│   ├── diagrams/             # UML diagrams and design models
-│   │   ├── plantuml/         # PlantUML source files (.puml)
-│   │   │   ├── usecase/      # Use case diagrams
-│   │   │   ├── class/        # Class diagrams
-│   │   │   ├── sequence/     # Sequence diagrams
-│   │   │   └── state/        # State diagrams
-│   │   ├── drawio/           # Draw.io source files
-│   │   └── compiled/         # Generated diagram images (PNG/SVG)
-│   ├── reports/              # Project deliverables and reports
-│   └── images/               # Screenshots, mockups, and other images
-│       ├── screenshots/
-│       └── mockups/
-├── src/                      # Application source (FastAPI, React, Docker Compose, start.sh)
+SFWRENG-3A04-Group6-T01/
+├── docs/                               # Design artifacts and UML diagrams
+│   └── diagrams/
+│       ├── drawio/                     # Draw.io analysis class diagram
+│       └── plantuml/
+│           ├── class/                  # Class diagrams (one per subsystem + combined)
+│           ├── sequence/               # Sequence diagrams (BE1-BE8)
+│           ├── state/                  # State charts (one per subsystem)
+│           └── usecase/                # Use case diagrams
+│
+├── scripts/                            # Developer utility scripts
+│   ├── apply_backend_migrations.sh     # Run all DB migration files in order
+│   ├── compile_diagrams.sh             # Batch-compile all PlantUML files to PNG
+│   ├── generate_certs.sh               # Generate Mosquitto TLS certificates
+│   └── setup_dev.sh                    # First-time dev environment setup
+│
+├── src/                                # All application source code
+│   ├── docker-compose.yml              # Orchestrates frontend, backend, mosquitto
+│   ├── start.sh                        # Helper: generates certs + runs Compose
+│   ├── .env.example                    # Environment variable template
+│   ├── Simulator.py                    # Publishes fake sensor readings over MQTT
+│   │
+│   ├── backend/                        # FastAPI backend service
+│   │   ├── main.py                     # App entry point; registers all routers & workers
+│   │   ├── requirements.txt            # Python dependencies
+│   │   ├── Dockerfile
+│   │   ├── pytest.ini
+│   │   ├── app/
+│   │   │   ├── routers/                # HTTP route handlers (one file per subsystem)
+│   │   │   │   ├── accounts.py         # User account CRUD + admin operations
+│   │   │   │   ├── aggregation.py      # Aggregated telemetry queries
+│   │   │   │   ├── alerts.py           # Alert listing, acknowledgement, SSE stream
+│   │   │   │   ├── public_demo.py      # Unauthenticated demo endpoints
+│   │   │   │   ├── public_zones.py     # Public zone status (API-key protected)
+│   │   │   │   ├── thresholds.py       # Threshold CRUD
+│   │   │   │   └── validation.py       # Data validation event endpoints
+│   │   │   ├── services/               # Business logic layer
+│   │   │   │   ├── accounts_service.py
+│   │   │   │   ├── aggregated_data_repository.py
+│   │   │   │   ├── aggregation_service.py
+│   │   │   │   ├── alert_repository.py
+│   │   │   │   ├── alert_service.py
+│   │   │   │   ├── api_key_repository.py
+│   │   │   │   ├── notification_service.py  # Twilio SMS dispatch
+│   │   │   │   ├── public_zones_service.py
+│   │   │   │   ├── threshold_evaluation.py
+│   │   │   │   ├── threshold_repository.py
+│   │   │   │   ├── threshold_service.py
+│   │   │   │   ├── validation_events_repository.py
+│   │   │   │   └── validation_service.py
+│   │   │   ├── models/                 # Pydantic response/request models
+│   │   │   │   ├── public_api_key.py
+│   │   │   │   └── public_zone.py
+│   │   │   ├── shared/                 # Cross-cutting utilities
+│   │   │   │   ├── auth.py             # JWT creation & verification
+│   │   │   │   ├── db.py               # Async DB connection pool
+│   │   │   │   ├── enums.py            # Shared enumerations (severity, metric types)
+│   │   │   │   ├── alert_sse_broadcaster.py  # SSE push for live alerts
+│   │   │   │   ├── public_api_rate_limiter.py
+│   │   │   │   ├── public_api_audit_middleware.py
+│   │   │   │   └── seed_accounts.py    # Default account seeding at startup
+│   │   │   └── tasks/                  # Async background workers
+│   │   │       ├── mqtt_subscriber.py       # MQTT → DB ingestion
+│   │   │       ├── aggregation_worker.py    # Periodic 5-min/hourly rollups
+│   │   │       └── threshold_evaluator_worker.py  # Polls readings, fires alerts
+│   │   ├── db/
+│   │   │   ├── migrations/             # Ordered SQL migration files (001–024)
+│   │   │   └── seeds/                  # Demo seed data
+│   │   ├── tests/                      # pytest test suite
+│   │   │   ├── conftest.py
+│   │   │   ├── test_aggregation.py
+│   │   │   ├── test_alerts.py
+│   │   │   ├── test_public_api.py
+│   │   │   └── test_thresholds.py
+│   │   └── scripts/                    # One-off operational scripts
+│   │       ├── backfill_hourly_max_from_five_minute_max.py
+│   │       ├── demo_alert_pipeline.py
+│   │       └── test_twilio_sms.py
+│   │
+│   ├── frontend/                       # React + Vite frontend
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   ├── index.html
+│   │   └── src/
+│   │       ├── App.tsx                 # Root component with routing
+│   │       ├── main.tsx                # React entry point
+│   │       ├── api/                    # Axios API client functions
+│   │       │   ├── client.ts           # Configured axios instance
+│   │       │   ├── accounts.ts
+│   │       │   ├── aggregation.ts
+│   │       │   ├── alerts.ts
+│   │       │   ├── auth.ts
+│   │       │   ├── publicZones.ts
+│   │       │   ├── thresholds.ts
+│   │       │   └── validation.ts
+│   │       ├── components/             # Reusable UI components
+│   │       │   ├── AlertPanel.tsx
+│   │       │   ├── AlertsBrowserModal.tsx
+│   │       │   ├── AggregationHistoryChart.tsx
+│   │       │   ├── MetricGauge.tsx
+│   │       │   ├── ThresholdTable.tsx
+│   │       │   ├── ThresholdFormModal.tsx
+│   │       │   ├── ZoneMap.tsx
+│   │       │   ├── PublicLandingMap.tsx
+│   │       │   ├── SeverityBadge.tsx
+│   │       │   ├── SeverityChart.tsx
+│   │       │   ├── ViolationAlertModal.tsx
+│   │       │   └── ...
+│   │       ├── pages/                  # Route-level page components
+│   │       │   ├── LandingPage.tsx     # Public zone map (unauthenticated)
+│   │       │   ├── LoginPage.tsx
+│   │       │   ├── RegisterRequestPage.tsx
+│   │       │   ├── AccountPage.tsx     # User profile & account management
+│   │       │   └── ThresholdsPage.tsx  # Threshold CRUD + alert dashboard
+│   │       ├── context/
+│   │       │   └── AuthContext.tsx     # Global auth state (JWT)
+│   │       ├── lib/                    # Utility helpers
+│   │       │   ├── aqi.ts              # Air quality index calculations
+│   │       │   ├── metrics.ts          # Metric formatting
+│   │       │   └── sseAlerts.ts        # SSE client for live alerts
+│   │       └── types/
+│   │           └── index.ts            # Shared TypeScript interfaces
+│   │
+│   └── mosquitto/                      # MQTT broker
+│       └── config/
+│           ├── mosquitto.conf          # Broker config (TLS, auth, ports)
+│           ├── passwd                  # MQTT username/password file
+│           └── certs/                  # TLS certificates (gitignored, generated locally)
+│
+└── tests/                              # Top-level test documentation
 ```
 
-## How to run the app (SCEMAS)
+---
 
-The stack is **MQTT (Mosquitto)**, **FastAPI backend**, and **React (Vite) frontend**, orchestrated with **Docker Compose**. Use the helper script from `src/` so TLS certs and Compose are set up correctly.
+## How to Run
 
 ### Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + **Compose v2**: `docker compose`, not the legacy `docker-compose` binary)
-- Git
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Compose v2)
+- Git and Bash (Git Bash on Windows)
 
-### 1. Environment file
-
-All runtime secrets and URLs are read from **`src/.env`** (Compose loads it from that directory).
+### 1. Clone and configure
 
 ```bash
-cd src
+git clone <repository-url>
+cd SFWRENG-3A04-Group6-T01/src
 cp .env.example .env
 ```
 
-Edit `src/.env` and set at least:
+Open `src/.env` and set at minimum:
 
-- **`SUPABASE_DB_URL`** — PostgreSQL connection string (Supabase)
-- **`JWT_SECRET`** — any strong random string (required for login / protected routes)
+```env
+SUPABASE_DB_URL=postgresql://postgres:[password]@[host]:5432/postgres
+JWT_SECRET=<any-strong-random-string>
+```
 
-Fill in Twilio and other keys as needed for your setup; see comments in `src/.env.example` and [`src/README.md`](src/README.md#environment-variables).
+For SMS alerts, also fill in the `TWILIO_*` variables and set `TWILIO_SMS_ENABLED=true`.
 
 ### 2. Start the stack
 
 ```bash
 cd src
-chmod +x start.sh    # only once, if your shell says “permission denied”
+chmod +x start.sh   # once, on Linux/Mac (not needed on Windows Git Bash)
 ./start.sh
 ```
 
-This generates Mosquitto TLS certs if they are missing, builds images when needed, and starts **frontend**, **backend**, and **broker**.
+`start.sh` generates Mosquitto TLS certificates if they are missing, then calls `docker compose up --build`.
 
-| Script flag | Purpose |
-|-------------|---------|
-| *(none)* | Build images (if needed) and start services |
-| `./start.sh --no-build` | Faster restart when you only changed mounted code |
-| `./start.sh --regen` | Regenerate MQTT TLS certificates |
-| `./start.sh --help` | Show usage |
+| Flag | Effect |
+|------|--------|
+| *(none)* | Build images if needed and start all services |
+| `--no-build` | Faster restart when only mounted source files changed |
+| `--regen` | Regenerate MQTT TLS certificates |
+| `--help` | Show usage |
 
 ### 3. Open the app
 
 | Service | URL |
 |---------|-----|
-| **Web UI** | [http://localhost:3000](http://localhost:3000) |
-| **API (Swagger)** | [http://localhost:8000/docs](http://localhost:8000/docs) |
-| **MQTT (TLS)** | `localhost:8883` (used by backend/simulator inside Docker) |
+| Web UI | http://localhost:3000 |
+| Backend API + Swagger | http://localhost:8000/docs |
+| MQTT broker (TLS) | localhost:8883 |
 
-### 4. Stop the stack
+### 4. Apply database migrations
 
-From `src/`:
+If this is the first time connecting to a fresh database, run the migrations:
 
 ```bash
+cd ..    # repository root
+chmod +x scripts/apply_backend_migrations.sh
+./scripts/apply_backend_migrations.sh
+```
+
+### 5. Stop the stack
+
+```bash
+cd src
 docker compose down
 ```
 
-(Use `docker-compose down` only if your machine still has the old v1 CLI.)
+---
 
-### Running without Docker (optional)
+## Running Without Docker (Local Dev)
 
-For **backend** or **frontend** only on your machine, use Node 20+ and Python 3.11+ as described in [`src/README.md`](src/README.md) under **Development**. You still need PostgreSQL (and usually MQTT) reachable at the URLs in your env files.
+### Backend
 
-### Frontend builds (`npm`)
+```bash
+cd src/backend
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
 
-Node dependencies and scripts live under **`src/frontend/`**, not `src/`. For a production build:
+### Frontend
 
 ```bash
 cd src/frontend
 npm install
-npm run build
+npm run dev     # Vite dev server at http://localhost:5173
 ```
 
-## Getting Started (documentation & diagrams)
+Set `VITE_API_URL=http://localhost:8000` in `src/frontend/.env.local` if the dev server cannot reach the backend.
 
-### Prerequisites
+---
 
-- PlantUML (for diagram generation)
-- Draw.io (for editing .drawio files)
+## Running Tests
 
-### Compiling PlantUML Diagrams
-
-To generate PNG images from PlantUML files:
+Backend tests use **pytest** and live in `src/backend/tests/`:
 
 ```bash
-# Compile a single diagram
-plantuml docs/diagrams/plantuml/usecase/usecase_diagram_2_revised.puml -o ../compiled
-
-# Compile all diagrams
-plantuml docs/diagrams/plantuml/**/*.puml -o ../compiled
+cd src/backend
+source venv/bin/activate
+pytest
 ```
+
+---
+
+## Design Diagrams
+
+PlantUML source files are under `docs/diagrams/plantuml/`. To compile them to PNG:
+
+```bash
+# Single diagram
+plantuml docs/diagrams/plantuml/class/SCEMAS.puml
+
+# All diagrams
+./scripts/compile_diagrams.sh
+```
+
+Rendered images are written to `docs/diagrams/compiled/` (gitignored).

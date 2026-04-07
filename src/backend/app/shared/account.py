@@ -1,20 +1,12 @@
 """
-Pydantic models for the Account Management subsystem (Jason).
+Pydantic models for account management.
 
-Schema note — naming mismatch between the class diagram and the DB:
-  Class diagram uses `id: int` and `role: UserRole`.
-  Jason's DB migration (019_create_accounts.sql) uses `aid` and `clearance: str`.
-  These models match the DB schema so nothing breaks at query time.
-  When Jason's accounts PR is merged his AccountResponse will replace the one
-  below. The extra models (AccountListResponse, CredentialsUpdate, AuditLogEntry,
-  AuditLogListResponse) arrive with his PR; they are defined here now so other
-  subsystems can import from a stable location without depending on Jason's branch.
+Naming follows the DB (see migration 019_create_accounts.sql): primary key `aid`,
+clearance string `clearance` ("admin" | "operator"), not diagram-style `id` + enum role.
 
-JWT integration (added in this PR):
-  LoginResponse was extended with `access_token` and `token_type` so the frontend
-  can receive a signed JWT in the same response as the account profile. The token
-  is optional (None) when JWT_SECRET is not set in the environment — the backend
-  degrades gracefully, but all subsequent authenticated requests will fail with 401.
+LoginResponse includes optional `access_token` / `token_type` so the client gets
+a JWT alongside the profile. If JWT_SECRET is unset, the token is omitted and
+protected routes return 401 until configured.
 """
 
 from __future__ import annotations

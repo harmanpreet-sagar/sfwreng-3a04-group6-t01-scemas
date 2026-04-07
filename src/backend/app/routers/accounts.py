@@ -25,9 +25,8 @@ Token security:
     This is acceptable for a demo with short sessions.
 
 Dependency stubs:
-  get_current_account and require_admin use account_dependencies.py which
-  contains a proof-of-concept stub. Jason's full RBAC implementation will
-  replace these when his PR is merged.
+  get_current_account and require_admin use account_dependencies.py (header-based
+  PoC). Production flows should use shared/auth.py JWT dependencies instead.
 """
 
 from __future__ import annotations

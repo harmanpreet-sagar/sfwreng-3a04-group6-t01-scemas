@@ -12,7 +12,7 @@ export type Severity = 'low' | 'medium' | 'high' | 'critical';
 // Condition matches ThresholdCondition in backend/app/shared/enums.py
 export type Condition = 'gt' | 'gte' | 'lt' | 'lte' | 'eq';
 
-// Clearance matches the `clearance` column in the accounts table (Jason's schema).
+// Clearance matches the `clearance` column in the accounts table.
 // Note: this is lowercase ("admin"/"operator"), unlike UserRole in auth.py ("ADMIN"/"OPERATOR").
 // The mapping happens in accounts.py at login time.
 export type Clearance = 'admin' | 'operator';

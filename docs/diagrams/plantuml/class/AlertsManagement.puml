@@ -7,27 +7,21 @@ class APIFacade <<external>> {
 }
 
 interface IAlertsService <<external>> {
-  +evaluateTelemetry(data : Map)
   +generateAlert(violation : Map) : Alert
   +updateAlertStatus(id : int, status : String)
 }
 
-class DashboardAgent <<external>> {
-  +displayAlert(alert : Alert)
-  +displayAlerts()
-  +refreshView()
-}
-
-entity ThresholdDB <<external>> {
+' NEW — replaces direct arrow AlertsManagement --> ThresholdDB.
+' ThresholdEvaluatorWorker depends on this interface only;
+' the concrete ThresholdDB lives in Threshold Management.
+class IThresholdRepository <<external>> #FFD0D0 {
   +getActiveThresholdRules() : List
 }
 
-entity AggregatedEnvironmentalDataDB <<external>> {
+' NEW — replaces direct arrow AlertsManagement --> AggregatedEnvironmentalDataDB.
+' The concrete class lives in Aggregation Management.
+class IAggregatedDataRepository <<external>> #FFD0D0 {
   +getAggregatedEnvironmentalData(zoneId : String, metric : String) : List
-}
-
-entity ValidSensorDataDB <<external>> {
-  +getValidatedSensorData() : List
 }
 
 ' ─── Own classes ─────────────────────────────────────────────
@@ -49,21 +43,49 @@ enum AlertStatus {
   RESOLVED
 }
 
-class AlertsManagement {
+' NEW — maps to threshold_evaluator_worker.py + threshold_evaluation.py.
+' Background asyncio task: polls every 5 s, compares latest aggregated
+' values against active thresholds, calls AlertsManagement.createAlert()
+' on breach. Absorbs evaluateThresholdViolations() and
+' detectAnomalousTrends() that were incorrectly on AlertsManagement.
+class ThresholdEvaluatorWorker #FFD0D0 {
+  -intervalSeconds : int
+  +runEvaluationCycle()
+  +isThresholdBreached(condition : String, observed : float, limit : float) : Boolean
+}
+
+' NEW — maps to alert_sse_broadcaster.py (AlertSSEBroadcaster).
+' Thread-safe in-memory fan-out to all connected SSE dashboard clients.
+' Decouples AlertsManagement from DashboardAgent entirely.
+class AlertSSEBroadcaster #FFD0D0 {
+  -subscriberQueues : Set
+  +subscribe() : Queue
+  +unsubscribe(q : Queue)
+  +publish(event : Map)
+  +stream(request : Request)
+}
+
+' MODIFIED — realigned with AlertService in alert_service.py.
+' Removed: evaluateTelemetry, generateAlert, evaluateThresholdViolations,
+'          detectAnomalousTrends (moved to ThresholdEvaluatorWorker).
+' Added:   acknowledgeAlert, resolveAlert, listAlerts, getAlertById,
+'          activeAlertExistsForZoneMetric (all in AlertService).
+class AlertsManagement ##[bold]red {
   -data : Map
-  -violation : Map
-  +evaluateTelemetry(data : Map)
-  +generateAlert(violation : Map) : Alert
-  +updateAlertStatus(id : int, status : String)
-  +evaluateThresholdViolations()
-  +detectAnomalousTrends()
   +createAlert(alert : Alert)
+  +acknowledgeAlert(id : int)
+  +resolveAlert(id : int)
+  +listAlerts(status : String, zone : String, severity : String) : List
+  +getAlertById(id : int) : Alert
+  +activeAlertExistsForZoneMetric(zone : String, metric : String) : Boolean
   +publishAlertUpdate(alert : Alert)
 }
 
-class NotificationService {
-  +sendAlertCreated(alert : Alert)
-  +sendStatusChangeNotification(alert : Alert)
+' MODIFIED — sendStatusChangeNotification() removed: does not exist in
+' notification_service.py. Only send_critical_alert_sms_if_configured()
+' exists (Twilio SMS, critical severity only).
+class NotificationService ##[bold]red {
+  +sendCriticalAlertSms(alert : Alert)
 }
 
 entity AlertsDB {
@@ -76,17 +98,24 @@ entity AlertsDB {
 ' ─── Cross-subsystem connections ─────────────────────────────
 APIFacade        --> IAlertsService
 AlertsManagement ..|> IAlertsService
-AlertsManagement --> ThresholdDB
-AlertsManagement --> AggregatedEnvironmentalDataDB
-AlertsManagement --> ValidSensorDataDB
-AlertsManagement --> APIFacade
-NotificationService --> DashboardAgent
+
+' NEW — ThresholdEvaluatorWorker reads via interface stubs, not
+' concrete DB classes from other packages.
+ThresholdEvaluatorWorker -[#red,bold]-> IThresholdRepository
+ThresholdEvaluatorWorker -[#red,bold]-> IAggregatedDataRepository
+ThresholdEvaluatorWorker -[#red,bold]-> AlertsManagement
+
+' NEW — NotificationService now routes push-events through APIFacade
+' (the PAC Control) rather than directly to DashboardAgent.
+NotificationService -[#red,bold]-> APIFacade
 
 ' ─── Internal relationships ──────────────────────────────────
 AlertsManagement    --> AlertsDB
 AlertsManagement    --> NotificationService
+AlertsManagement    -[#red,bold]-> AlertSSEBroadcaster
 AlertsDB            --> Alert
 Alert               --> AlertStatus
 NotificationService ..> Alert
+AlertSSEBroadcaster ..> Alert
 
 @enduml

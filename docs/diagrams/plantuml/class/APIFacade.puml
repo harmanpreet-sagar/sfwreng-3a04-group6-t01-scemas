@@ -47,22 +47,37 @@ entity Alert {
 }
 
 ' ─── Own classes ────────────────────────────────────────────
-class AccountAdminAgent {
+class AccountAdminAgent <<Presentation>> {
   +initiateAccountOperation(req : Request)
 }
 
-class ThresholdAdminAgent {
+class ThresholdAdminAgent <<Presentation>> {
   +initiateThresholdOperation(req : Request)
 }
 
-class DashboardAgent {
+class DashboardAgent <<Presentation>> {
   +displayData(data : Map)
   +displayAlert(alert : Alert)
   +displayAlerts()
   +refreshView()
 }
 
-class APIFacade {
+' NEW — was missing from original diagram despite being in the D2
+' architecture diagram as "Recent Activity Cache". Completes the PAC
+' Abstraction (A) component. Holds UI-visible state so no Presentation
+' class ever queries a backend subsystem directly.
+class RecentActivityCache <<Abstraction>> #FFD0D0 {
+  -cachedAlerts : List
+  -cachedThresholds : List
+  -lastUpdated : DateTime
+  +getAlerts() : List
+  +getThresholds() : List
+  +updateAlerts(alerts : List)
+  +updateThresholds(thresholds : List)
+  +invalidate()
+}
+
+class APIFacade <<Control>> {
   -req : Request
   -result : Result
   -resp : Response
@@ -86,8 +101,9 @@ interface IAccountService {
   +deactivateAccount(id : int)
 }
 
-interface IAlertsService {
-  +evaluateTelemetry(data : Map)
+' MODIFIED — evaluateTelemetry() removed: this method no longer exists
+' on AlertsManagement (it was moved to ThresholdEvaluatorWorker).
+interface IAlertsService ##[bold]red {
   +generateAlert(violation : Map) : Alert
   +updateAlertStatus(id : int, status : String)
 }
@@ -121,6 +137,10 @@ AccountAdminAgent   --> APIFacade
 ThresholdAdminAgent --> APIFacade
 DashboardAgent      --> APIFacade
 
+' NEW — completing the PAC C<->A and A->P wiring
+APIFacade           -[#red,bold]-> RecentActivityCache
+RecentActivityCache -[#red,bold]-> DashboardAgent
+
 APIFacade --> IThresholdService
 APIFacade --> IAccountService
 APIFacade --> IAlertsService
@@ -135,6 +155,7 @@ AccountAdminAgent  ..> Request
 ThresholdAdminAgent ..> Request
 DashboardAgent     ..> Alert
 IAlertsService     ..> Alert
+RecentActivityCache ..> Alert
 successResponse    ..> Result
 successResponse    ..> Response
 errorResponse      ..> Response
@@ -145,8 +166,11 @@ ThresholdManagement   ..|> IThresholdService
 AlertsManagement      ..|> IAlertsService
 AggregationManagement ..|> IAggregationService
 
-ShowDataToDashboards  --> DashboardAgent
-NotificationService   --> DashboardAgent
-AlertsManagement      --> APIFacade
+' MODIFIED — ShowDataToDashboards and NotificationService previously
+' pointed directly to DashboardAgent (a Presentation component).
+' Both now route through APIFacade (the PAC Control) so no backend
+' subsystem holds a direct reference to a Presentation class.
+ShowDataToDashboards  -[#red,bold]-> APIFacade
+NotificationService   -[#red,bold]-> APIFacade
 
 @enduml

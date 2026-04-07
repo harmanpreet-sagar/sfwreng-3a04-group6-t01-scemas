@@ -1,19 +1,14 @@
 """
-PoC authentication stub for the Account Management subsystem (Jason).
+Proof-of-concept auth helpers for the accounts router.
 
-Jason's accounts router imports get_current_account and require_admin from
-here.  This file is shared infrastructure — it lives in our branch so the
-import resolves the moment Jason's router PR is merged.
+The router imports get_current_account and require_admin from here. Identity is
+read from request headers instead of a JWT so flows can be tested without a full
+auth stack. Prefer shared/auth.py (JWT + require_admin) for production routes.
 
-Identity is read from plain request headers instead of a JWT so the accounts
-router can be exercised without a running auth server.  Once Jason's login
-endpoint is integrated with shared/auth.py (which issues real JWTs), this
-file can be replaced with wrappers around require_admin / _extract_user.
-
-Headers consumed by Jason's router:
+Headers:
     X-Account-Id        — numeric account aid
     X-Account-Clearance — "admin" | "operator"
-    X-Account-Email     — (optional) actor e-mail recorded in audit logs
+    X-Account-Email     — optional; used in audit logs
 """
 
 from __future__ import annotations
@@ -39,8 +34,7 @@ def require_admin(current: dict = Depends(get_current_account)) -> dict:
     """
     Reject non-admin callers with 403.
 
-    Will be replaced by a wrapper around shared/auth.py's require_admin()
-    once JWT tokens carry a clearance/role claim from Jason's login endpoint.
+    Can be swapped for shared/auth.require_admin once all routes use JWT claims.
     """
     if current["clearance"] != "admin":
         raise HTTPException(

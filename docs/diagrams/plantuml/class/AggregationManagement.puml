@@ -2,7 +2,7 @@
 title Aggregation Management
 
 ' ─── External stubs ──────────────────────────────────────────
-class APIFacade <<external>> {
+class APIFacade <<external>> #FFD0D0 {
   +dispatchRequest(req : Request)
 }
 
@@ -11,17 +11,8 @@ interface IAggregationService <<external>> {
   +showDataToDashboards(data : Map)
 }
 
-class DashboardAgent <<external>> {
-  +displayData(data : Map)
-  +refreshView()
-}
-
 entity ValidSensorDataDB <<external>> {
   +getValidatedSensorData() : List
-}
-
-class AlertsManagement <<external>> {
-  +detectAnomalousTrends()
 }
 
 class APIManagement <<external>> {
@@ -79,8 +70,12 @@ entity AggregatedData {
 APIFacade             --> IAggregationService
 AggregationManagement ..|> IAggregationService
 PerformAggregations   --> ValidSensorDataDB
-ShowDataToDashboards  --> DashboardAgent
-AggregatedEnvironmentalDataDB --> AlertsManagement
+
+' MODIFIED — previously pointed directly to DashboardAgent (a
+' Presentation component). Now routes through APIFacade (the PAC
+' Control) so no backend subsystem directly references a P class.
+ShowDataToDashboards  -[#red,bold]-> APIFacade
+
 AggregatedEnvironmentalDataDB --> APIManagement
 
 ' ─── Internal relationships ──────────────────────────────────
