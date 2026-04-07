@@ -2,6 +2,8 @@
 
 This directory contains all runnable code for SCEMAS: the FastAPI backend, the React frontend, the Mosquitto MQTT broker configuration, and the Docker Compose orchestration.
 
+For **cloud deployment** (Vercel frontend, Render backend, env vars, CORS, MQTT), see the **Deployment** section in the repository root [README.md](../README.md).
+
 ## Quick Start
 
 ```bash
@@ -82,10 +84,13 @@ Copy `.env.example` to `.env` and fill in:
 | `TWILIO_AUTH_TOKEN` | No | Twilio auth token |
 | `TWILIO_FROM_NUMBER` | No | Sender phone number (E.164) |
 | `TWILIO_TO_NUMBER` | No | Recipient for critical alert SMS (E.164) |
-| `MQTT_BROKER_HOST` | No | Default: `mosquitto` (Docker service name) |
+| `MQTT_BROKER_HOST` | No | Default: `mosquitto` (Docker). Use a public broker hostname on Render. |
 | `MQTT_BROKER_PORT` | No | Default: `8883` |
 | `MQTT_USERNAME` | No | Default: `admin` |
 | `MQTT_PASSWORD` | No | Default: `admin123` |
+| `MQTT_CA_CERT_PATH` | No | Local: path to Mosquitto `ca.crt`. Cloud (public CA): `SYSTEM` |
+| `MQTT_USE_TLS` | No | Default `true`; set `false` only for plain MQTT (e.g. port 1883) |
+| `CORS_ALLOW_ORIGINS` | No | Backend only: comma-separated origins, no trailing slashes. Unset → `*` |
 
 ## start.sh Flags
 
@@ -118,7 +123,7 @@ npm install
 npm run dev     # Vite dev server — http://localhost:5173
 ```
 
-Create `frontend/.env.local` with `VITE_API_URL=http://localhost:8000` if needed.
+Create `frontend/.env.local` with `VITE_API_URL=http://localhost:8000` if needed. For production builds (e.g. Vercel), set `VITE_API_URL` in the host's environment and redeploy — see root README **Deployment**.
 
 ## Database Migrations
 

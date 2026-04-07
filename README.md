@@ -43,7 +43,7 @@ SFWRENG-3A04-Group6-T01/
 │           ├── sequence/               # Sequence diagrams (BE1-BE8)
 │           ├── state/                  # State charts (one per subsystem)
 │           └── usecase/                # Use case diagrams
-│
+├── vercel.json                         # Vercel: build src/frontend from repo root
 ├── scripts/                            # Developer utility scripts
 │   ├── apply_backend_migrations.sh     # Run all DB migration files in order
 │   ├── compile_diagrams.sh             # Batch-compile all PlantUML files to PNG
@@ -213,8 +213,8 @@ chmod +x start.sh   # once, on Linux/Mac (not needed on Windows Git Bash)
 
 | Service | URL |
 |---------|-----|
-| Web UI | http://localhost:3000 |
-| Backend API + Swagger | http://localhost:8000/docs |
+| Web UI | <http://localhost:3000> |
+| Backend API + Swagger | <http://localhost:8000/docs> |
 | MQTT broker (TLS) | localhost:8883 |
 
 ### 4. Apply database migrations
@@ -269,6 +269,56 @@ cd src/backend
 source venv/bin/activate
 pytest
 ```
+
+---
+
+## Deployment (Vercel + Render)
+
+The frontend is a static Vite build; the backend is a long-running FastAPI process with background workers. They are usually deployed separately.
+
+### Frontend — Vercel (Git)
+
+1. In the Vercel dashboard, **Import** your existing GitHub repository (do not use the flow that creates a *new* empty Git repo).
+2. **Root Directory:** leave empty (repository root). The repo includes `vercel.json`, which installs and builds `src/frontend` and publishes `src/frontend/dist`.
+3. **Project name:** lowercase only (e.g. `sfwreng-3a04-group6-t01`); Vercel rejects uppercase in the project slug.
+4. **Production branch:** set to `main` (or your release branch) under Project → Settings → Git.
+5. **Environment variables** (Settings → Environment Variables), then **redeploy** so Vite picks them up at build time:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_URL` | Yes (production) | Public URL of the backend, e.g. `https://your-api.onrender.com` — **no trailing slash** |
+| `VITE_PUBLIC_DEMO_API_KEY` | No | Must match backend `DEMO_PUBLIC_API_KEY` if the public zone map should call `/public/zones` from the browser |
+
+Client-side routing uses SPA fallback rules in `vercel.json`; deep links should load the app correctly.
+
+### Backend — Render (Docker)
+
+1. Create a **Web Service**, connect the **same** Git repository.
+2. **Root Directory:** leave empty so the build uses the **repository root** `Dockerfile`, which copies `src/backend/` into the image. (Alternatively: Root Directory `src/backend` and Dockerfile `Dockerfile` inside that folder.)
+3. **Runtime:** Docker.
+4. Set **environment variables** (at minimum):
+
+| Variable | Description |
+|----------|-------------|
+| `JWT_SECRET` | Strong random secret for JWT signing |
+| `SUPABASE_DB_URL` | PostgreSQL connection string (Supabase) |
+| `CORS_ALLOW_ORIGINS` | Comma-separated frontend origins, **no trailing slashes**, e.g. `https://your-app.vercel.app` or `https://your-app.vercel.app,http://localhost:3000`. If unset, the API defaults to `allow_origins=["*"]` (OK for local dev only). |
+| `MQTT_*` | On Render there is no local `mosquitto` service. Point `MQTT_BROKER_HOST` / port / user / password at a **public** broker (e.g. HiveMQ Cloud). For TLS with a public CA, set `MQTT_CA_CERT_PATH=SYSTEM`. See `src/.env.example`. |
+| `DEMO_PUBLIC_API_KEY`, Twilio vars | Optional; same semantics as local `.env` |
+
+5. Redeploy after changing env vars.
+
+### Connect frontend and backend
+
+1. Deploy the backend first; copy its HTTPS origin.
+2. Set **`VITE_API_URL`** on Vercel to that origin (no trailing slash) and redeploy the frontend.
+3. Set **`CORS_ALLOW_ORIGINS`** on Render to your Vercel origin (exact scheme + host, no path, no trailing slash).
+
+### Repository layout for deploys
+
+| Path | Role |
+|------|------|
+| `vercel.json` | Vercel: install/build frontend from repo root |
 
 ---
 
