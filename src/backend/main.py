@@ -24,6 +24,7 @@ import asyncio
 import contextlib
 import importlib
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -105,12 +106,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS is wide-open for the PoC sprint so the React frontend on a different
-# port can reach the API without preflight failures.
-# TODO: narrow allow_origins to the actual frontend domain before production.
+# CORS: set CORS_ALLOW_ORIGINS on the server (e.g. Render) to a comma-separated list
+# of frontend URLs, no trailing slashes — e.g.
+#   CORS_ALLOW_ORIGINS=https://your-app.vercel.app,http://localhost:3000
+# If unset, allow_origins defaults to "*" (fine for local Docker; lock down in production).
+_cors_raw = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+_cors_origins = (
+    [o.strip() for o in _cors_raw.split(",") if o.strip()]
+    if _cors_raw
+    else ["*"]
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
