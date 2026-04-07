@@ -104,7 +104,7 @@ def login(body: LoginRequest) -> LoginResponse:
         message="Identity verified",
         identity_verified=True,
         account=result["account"],
-        access_token="poc-token",
+        access_token=token,
     )
 
 

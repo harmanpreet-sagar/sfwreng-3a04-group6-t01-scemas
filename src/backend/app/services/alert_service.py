@@ -28,6 +28,8 @@ from app.shared.audit import log_audit_event
 from . import alert_repository
 from .notification_service import send_critical_alert_sms_if_configured
 
+from app.services.accounts_service import write_system_audit_log
+
 
 @dataclass(frozen=True)
 class CreateAlertOutcome:
@@ -74,6 +76,7 @@ class AlertService:
                 "threshold_id": inserted.threshold_id,
             },
         )
+        write_system_audit_log("alert.created", "system", f"Zone: {inserted.zone}, Metric: {inserted.metric}, Severity: {inserted.severity.value}")
         if inserted.severity == AlertSeverity.critical:
             send_critical_alert_sms_if_configured(inserted)
         publish_alert_sse(inserted, ALERT_SSE_CREATED)
@@ -115,6 +118,7 @@ class AlertService:
                     "status": updated.status.value,
                 },
             )
+            write_system_audit_log("alert.acknowledged", "system", f"Alert {updated.id} acknowledged — Zone: {updated.zone}")
             publish_alert_sse(updated, ALERT_SSE_ACKNOWLEDGED)
             return AlertTransitionOutcome(alert=updated)
 
@@ -140,6 +144,7 @@ class AlertService:
                     "status": updated.status.value,
                 },
             )
+            write_system_audit_log("alert.resolved", "system", f"Alert {updated.id} resolved — Zone: {updated.zone}")
             publish_alert_sse(updated, ALERT_SSE_RESOLVED)
             return AlertTransitionOutcome(alert=updated)
 

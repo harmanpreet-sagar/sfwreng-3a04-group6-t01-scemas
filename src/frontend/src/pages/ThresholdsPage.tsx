@@ -47,15 +47,24 @@ import ZoneMap from '../components/ZoneMap';
 import ViolationAlertModal from '../components/ViolationAlertModal';
 import AlertsBrowserModal from '../components/AlertsBrowserModal';
 import { ScemasLogoMark } from '../components/ScemasLogoMark';
+import { listAuditLog, type AuditLogEntry } from '../api/accounts';
 
 type Filter = { zone: string; metric: string; status: 'all' | 'active' | 'inactive' };
 
 export default function ThresholdsPage() {
   const { account, token, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [auditEvents, setAuditEvents] = useState<AuditLogEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditEventType, setAuditEventType] = useState('');
+
+  const [auditDateFrom, setAuditDateFrom] = useState('');
+  const [auditDateTo, setAuditDateTo] = useState('');
 
   const [thresholds, setThresholds] = useState<Threshold[]>([]);
-  const [loading,    setLoading]    = useState(true);
+  const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -71,7 +80,7 @@ export default function ThresholdsPage() {
   // by passing '' when the same zone is clicked twice (toggle behaviour).
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
 
-  const [showForm,   setShowForm]   = useState(false);
+  const [showForm, setShowForm] = useState(false);
   // editTarget is null when creating a new rule and non-null when editing an existing one.
   const [editTarget, setEditTarget] = useState<Threshold | null>(null);
 
@@ -123,6 +132,22 @@ export default function ThresholdsPage() {
   useEffect(() => {
     void loadAlerts();
   }, [loadAlerts]);
+
+  const loadAuditLog = useCallback(async () => {
+    setAuditLoading(true);
+    setAuditError(null);
+    try {
+      setAuditEvents(await listAuditLog({
+        event_type: auditEventType || undefined,
+        date_from: auditDateFrom || undefined,
+        date_to: auditDateTo || undefined,
+      }));
+    } catch {
+      setAuditError('Failed to load audit log.');
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [auditEventType, auditDateFrom, auditDateTo]);
 
   const handleSseAlert = useCallback(
     (evt: SseAlertEvent) => {
@@ -221,22 +246,22 @@ export default function ThresholdsPage() {
   // Computed inline so no stale state is possible. The filter short-circuits
   // on the first failing condition to keep iteration fast for large lists.
   const visible = thresholds.filter(t => {
-    if (filter.zone   && t.zone   !== filter.zone)   return false;
-    if (filter.metric && t.metric !== filter.metric)  return false;
-    if (filter.status === 'active'   && !t.is_active)  return false;
-    if (filter.status === 'inactive' &&  t.is_active)  return false;
+    if (filter.zone && t.zone !== filter.zone) return false;
+    if (filter.metric && t.metric !== filter.metric) return false;
+    if (filter.status === 'active' && !t.is_active) return false;
+    if (filter.status === 'inactive' && t.is_active) return false;
     return true;
   });
 
   // ── Stats ────────────────────────────────────────────────────────────────────
   // All stats are derived from the full (unfiltered) thresholds array so the
   // numbers always reflect the system-wide state, not the current filter view.
-  const totalActive   = thresholds.filter(t => t.is_active).length;
+  const totalActive = thresholds.filter(t => t.is_active).length;
   const totalCritical = thresholds.filter(t => t.severity === 'critical').length;
 
   // Unique zone / metric lists power the filter dropdowns and show only values
   // that actually exist in the current data, avoiding dead filter options.
-  const uniqueZones   = [...new Set(thresholds.map(t => t.zone))].sort();
+  const uniqueZones = [...new Set(thresholds.map(t => t.zone))].sort();
   const uniqueMetrics = [...new Set(thresholds.map(t => t.metric))].sort();
 
   return (
@@ -290,6 +315,19 @@ export default function ThresholdsPage() {
               </svg>
               Accounts
             </button>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => { setShowAuditLog(true); void loadAuditLog(); }}
+                className="relative inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-moss-200"
+              >
+                <svg className="w-4 h-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                </svg>
+                Audit Log
+              </button>
+            )}
 
             <span className="hidden md:block text-sm text-moss-100/95 truncate max-w-[200px]">
               {account?.name}
@@ -536,6 +574,121 @@ export default function ThresholdsPage() {
         initialShowAll={browserInitialShowAll}
         onRefresh={() => void loadAlerts()}
       />
+
+      {showAuditLog && isAdmin && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-ink-950/40 backdrop-blur-sm" onClick={() => setShowAuditLog(false)} aria-hidden />
+          <div className="relative z-10 w-full max-w-5xl max-h-[85vh] flex flex-col rounded-2xl border border-ink-200/80 bg-white shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-ink-100 bg-gradient-to-r from-white via-parchment/50 to-moss-50/30 rounded-t-2xl">
+              <h2 className="font-display text-lg font-bold text-ink-950">Audit Log</h2>
+              <button onClick={() => setShowAuditLog(false)} className="text-ink-400 hover:text-ink-800 transition text-xl">✕</button>
+            </div>
+            <div className="px-6 py-3 border-b border-ink-100 flex flex-wrap gap-3 items-end bg-parchment/30">
+              <div>
+                <div>
+                  <label className="label">Event type</label>
+                  <select
+                    className="input !py-1.5 !text-xs w-52"
+                    value={auditEventType}
+                    onChange={e => setAuditEventType(e.target.value)}
+                  >
+                    <option value="">All events</option>
+                    <option value="login_success">login_success</option>
+                    <option value="login_failure">login_failure</option>
+                    <option value="account_created">account_created</option>
+                    <option value="account_deactivated">account_deactivated</option>
+                    <option value="password_changed">password_changed</option>
+                    <option value="request_approved">request_approved</option>
+                    <option value="request_denied">request_denied</option>
+                    <option value="threshold.created">threshold.created</option>
+                    <option value="threshold.updated">threshold.updated</option>
+                    <option value="threshold.activated">threshold.activated</option>
+                    <option value="threshold.deactivated">threshold.deactivated</option>
+                    <option value="threshold.deleted">threshold.deleted</option>
+                    <option value="alert.created">alert.created</option>
+                    <option value="alert.acknowledged">alert.acknowledged</option>
+                    <option value="alert.resolved">alert.resolved</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label">From</label>
+                <input
+                  type="datetime-local"
+                  className="input !py-1.5 !text-xs"
+                  value={auditDateFrom}
+                  onChange={e => setAuditDateFrom(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">To</label>
+                <input
+                  type="datetime-local"
+                  className="input !py-1.5 !text-xs"
+                  value={auditDateTo}
+                  onChange={e => setAuditDateTo(e.target.value)}
+                />
+              </div>
+              <button onClick={() => void loadAuditLog()} className="btn-primary !text-xs">Apply</button>
+              {(auditEventType || auditDateFrom || auditDateTo) && (
+                <button
+                  onClick={() => { setAuditEventType(''); setAuditDateFrom(''); setAuditDateTo(''); }}
+                  className="btn-ghost !text-xs text-ink-500"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="overflow-auto flex-1">
+              {auditLoading ? (
+                <div className="flex items-center justify-center py-16 gap-3 text-ink-500">
+                  <svg className="animate-spin w-6 h-6 text-moss-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  <span className="text-sm">Loading…</span>
+                </div>
+              ) : auditError ? (
+                <div className="px-6 py-4 text-sm text-red-700">{auditError}</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-ink-100 text-ink-500 text-left text-xs uppercase tracking-wider sticky top-0 bg-white">
+                      <th className="px-5 py-3 font-semibold">Event</th>
+                      <th className="px-5 py-3 font-semibold">Actor</th>
+                      <th className="px-5 py-3 font-semibold">Target</th>
+                      <th className="px-5 py-3 font-semibold">Detail</th>
+                      <th className="px-5 py-3 font-semibold">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-100">
+                    {auditEvents.length === 0 ? (
+                      <tr><td colSpan={5} className="px-5 py-10 text-center text-sm text-ink-400">No events found.</td></tr>
+                    ) : auditEvents.map(evt => (
+                      <tr key={evt.id} className="hover:bg-parchment/40 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-bold font-mono uppercase tracking-wide ${evt.event_type.includes('failure') || evt.event_type.includes('denied') || evt.event_type.includes('deleted') || evt.event_type.includes('deactivated')
+                            ? 'bg-red-100 text-red-800'
+                            : evt.event_type.includes('created') || evt.event_type.includes('approved') || evt.event_type.includes('activated')
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-ink-100 text-ink-600'
+                            }`}>
+                            {evt.event_type}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-ink-600">{evt.actor_email ?? '—'}</td>
+                        <td className="px-5 py-3.5 text-ink-600">{evt.target_email ?? '—'}</td>
+                        <td className="px-5 py-3.5 text-ink-400 max-w-[250px] truncate" title={evt.detail ?? ''}>{evt.detail ?? '—'}</td>
+                        <td className="px-5 py-3.5 text-ink-400 text-xs whitespace-nowrap">{new Date(evt.created_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

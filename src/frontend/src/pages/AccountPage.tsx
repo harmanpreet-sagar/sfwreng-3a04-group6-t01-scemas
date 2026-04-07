@@ -3,7 +3,7 @@
  *
  * Access:
  *  - Both admins and operators can reach this page.
- *  - Admins see all three tabs: Accounts, Pending Requests, Audit Log.
+ *  - Admins see all three tabs: Accounts, Pending Requests
  *  - Operators only see the Accounts tab, showing only their own account
  *    with just the change-password action. The backend enforces this too.
  */
@@ -13,24 +13,12 @@ import { useAuth } from '../context/AuthContext';
 import {
     listAccounts, registerAccount, changePassword, deactivateAccount,
     listPendingRequests, approveRequest, denyRequest, type PendingRequest,
-    listAuditLog, type AuditLogEntry,
 } from '../api/accounts';
 import type { Account } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ScemasLogoMark } from '../components/ScemasLogoMark';
 
-type Tab = 'accounts' | 'pending' | 'audit';
-
-const EVENT_TYPES = [
-    '',
-    'login_success',
-    'login_failure',
-    'account_created',
-    'account_deactivated',
-    'password_changed',
-    'request_approved',
-    'request_denied',
-];
+type Tab = 'accounts' | 'pending';
 
 export default function AccountsPage() {
     const { account: self, isAdmin, signOut } = useAuth();
@@ -66,14 +54,6 @@ export default function AccountsPage() {
     const [pendingError, setPendingError] = useState<string | null>(null);
     const [denyTarget, setDenyTarget] = useState<PendingRequest | null>(null);
     const [approveLoading, setApproveLoading] = useState<number | null>(null);
-
-    // audit log (admin only)
-    const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
-    const [auditLoading, setAuditLoading] = useState(false);
-    const [auditError, setAuditError] = useState<string | null>(null);
-    const [filterEventType, setFilterEventType] = useState('');
-    const [filterDateFrom, setFilterDateFrom] = useState('');
-    const [filterDateTo, setFilterDateTo] = useState('');
 
     // loaders
     const loadAccounts = useCallback(async () => {
@@ -112,26 +92,8 @@ export default function AccountsPage() {
         }
     }, [isAdmin, signOut, navigate]);
 
-    const loadAuditLog = useCallback(async () => {
-        if (!isAdmin) return;
-        setAuditLoading(true);
-        setAuditError(null);
-        try {
-            setAuditLog(await listAuditLog({
-                event_type: filterEventType || undefined,
-                date_from: filterDateFrom || undefined,
-                date_to: filterDateTo || undefined,
-            }));
-        } catch {
-            setAuditError('Failed to load audit log.');
-        } finally {
-            setAuditLoading(false);
-        }
-    }, [isAdmin, filterEventType, filterDateFrom, filterDateTo]);
-
     useEffect(() => { void loadAccounts(); }, [loadAccounts]);
     useEffect(() => { void loadPending(); }, [loadPending]);
-    useEffect(() => { void loadAuditLog(); }, [loadAuditLog]);
 
     // handlers
 
@@ -174,7 +136,6 @@ export default function AccountsPage() {
         try {
             const updated = await deactivateAccount(deactivateTarget.aid);
             setAccounts(prev => prev.map(a => a.aid === updated.aid ? updated : a));
-            void loadAuditLog();
         } catch { /* silent */ }
         finally { setDeactivateTarget(null); }
     }
@@ -185,7 +146,6 @@ export default function AccountsPage() {
             const created = await approveRequest(req.id);
             setPending(prev => prev.filter(r => r.id !== req.id));
             setAccounts(prev => [...prev, created]);
-            void loadAuditLog();
         } catch { /* silent */ }
         finally { setApproveLoading(null); }
     }
@@ -197,7 +157,6 @@ export default function AccountsPage() {
         try {
             await denyRequest(target.id);
             setPending(prev => prev.filter(r => r.id !== target.id));
-            void loadAuditLog();
         } catch (err: unknown) {
             console.error('Deny failed:', err);
             void loadPending(); // reload to restore state if it failed
@@ -213,7 +172,6 @@ export default function AccountsPage() {
     const visibleTabs = ([
         { key: 'accounts' as Tab, label: 'Accounts', adminOnly: false },
         { key: 'pending' as Tab, label: `Pending requests${pending.length > 0 ? ` (${pending.length})` : ''}`, adminOnly: true },
-        { key: 'audit' as Tab, label: 'Audit log', adminOnly: true },
     ]).filter(t => !t.adminOnly || isAdmin);
 
     return (
@@ -558,110 +516,6 @@ export default function AccountsPage() {
                                 </table>
                             </div>
                         )}
-                    </div>
-                )}
-
-                {/* ── AUDIT LOG TAB (admin only) ────────────────────────────────────── */}
-                {tab === 'audit' && isAdmin && (
-                    <div className="space-y-6">
-                        <div className="card border-ink-200/80 p-5">
-                            <h2 className="font-display text-base font-bold text-ink-950 mb-4">Filter audit log</h2>
-                            <div className="flex flex-wrap gap-3 items-end">
-                                <div>
-                                    <label className="label">Event type</label>
-                                    <select className="input !py-1.5 !text-xs w-44"
-                                        value={filterEventType} onChange={e => setFilterEventType(e.target.value)}>
-                                        {EVENT_TYPES.map(t => (
-                                            <option key={t} value={t}>{t || 'All events'}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="label">From</label>
-                                    <input type="datetime-local" className="input !py-1.5 !text-xs"
-                                        value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="label">To</label>
-                                    <input type="datetime-local" className="input !py-1.5 !text-xs"
-                                        value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
-                                </div>
-                                <button onClick={() => void loadAuditLog()} className="btn-primary !text-xs">
-                                    Apply
-                                </button>
-                                {(filterEventType || filterDateFrom || filterDateTo) && (
-                                    <button
-                                        onClick={() => { setFilterEventType(''); setFilterDateFrom(''); setFilterDateTo(''); }}
-                                        className="btn-ghost !text-xs text-ink-500"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="card border-ink-200/80 overflow-hidden shadow-card-lg">
-                            {auditLoading ? (
-                                <div className="flex items-center justify-center py-16 text-ink-500 gap-3">
-                                    <svg className="animate-spin w-6 h-6 text-moss-600" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                    </svg>
-                                    <span className="text-sm font-medium">Loading audit log…</span>
-                                </div>
-                            ) : auditError ? (
-                                <div className="px-5 py-4 text-sm text-red-900 bg-red-50">
-                                    {auditError}{' '}
-                                    <button onClick={() => void loadAuditLog()} className="font-semibold underline">Retry</button>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b border-ink-100 text-ink-500 text-left text-xs uppercase tracking-wider">
-                                                <th className="px-5 py-3 font-semibold">Event</th>
-                                                <th className="px-5 py-3 font-semibold">Actor</th>
-                                                <th className="px-5 py-3 font-semibold">Target</th>
-                                                <th className="px-5 py-3 font-semibold">Detail</th>
-                                                <th className="px-5 py-3 font-semibold">Timestamp</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-ink-100">
-                                            {auditLog.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={5} className="px-5 py-10 text-center text-sm text-ink-400">
-                                                        No entries found.
-                                                    </td>
-                                                </tr>
-                                            ) : auditLog.map(entry => (
-                                                <tr key={entry.id} className="hover:bg-parchment/40 transition-colors">
-                                                    <td className="px-5 py-3.5">
-                                                        <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-bold font-mono uppercase tracking-wide ${entry.event_type.includes('failure') || entry.event_type.includes('denied')
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : entry.event_type.includes('deactivated')
-                                                                    ? 'bg-amber-100 text-amber-800'
-                                                                    : entry.event_type.includes('approved') || entry.event_type.includes('created')
-                                                                        ? 'bg-green-100 text-green-800'
-                                                                        : 'bg-ink-100 text-ink-600'
-                                                            }`}>
-                                                            {entry.event_type}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-ink-600">{entry.actor_email ?? '—'}</td>
-                                                    <td className="px-5 py-3.5 text-ink-600">{entry.target_email ?? '—'}</td>
-                                                    <td className="px-5 py-3.5 text-ink-400 max-w-[200px] truncate" title={entry.detail ?? ''}>
-                                                        {entry.detail ?? '—'}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-ink-400 text-xs whitespace-nowrap">
-                                                        {new Date(entry.created_at).toLocaleString()}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 )}
             </main>
