@@ -17,6 +17,7 @@ been successfully connected.
 import asyncio
 import json
 import os
+import ssl
 
 import paho.mqtt.client as mqtt
 
@@ -28,6 +29,9 @@ _PORT     = int(os.getenv("MQTT_BROKER_PORT", "8883"))
 _USERNAME = os.getenv("MQTT_USERNAME",     "admin")
 _PASSWORD = os.getenv("MQTT_PASSWORD",     "admin123")
 _CA_CERT  = os.getenv("MQTT_CA_CERT_PATH", "./mosquitto/config/certs/ca.crt")
+# Cloud brokers (HiveMQ Cloud, etc.) use a public CA — set MQTT_CA_CERT_PATH=SYSTEM on Render.
+# Local Docker Mosquitto: keep default file path; code uses tls_insecure_set for self-signed CN.
+_USE_TLS = os.getenv("MQTT_USE_TLS", "true").strip().lower() in ("1", "true", "yes")
 
 _TOPIC = "scemas/sensors/#"
 
@@ -95,13 +99,23 @@ async def run_mqtt_subscriber() -> None:
     client.username_pw_set(_USERNAME, _PASSWORD)
 
     print(f"🔌 Connecting to MQTT broker at {_HOST}:{_PORT}")
-    print(f"🔒 Using TLS — CA cert: {_CA_CERT}")
+    if _USE_TLS:
+        print(
+            "🔒 TLS on — CA: system trust store"
+            if _CA_CERT.strip().upper() == "SYSTEM"
+            else f"🔒 TLS on — CA file: {_CA_CERT}"
+        )
+    else:
+        print("🔓 TLS off (plain MQTT)")
 
     try:
-        client.tls_set(ca_certs=_CA_CERT)
-        # Hostname verification is skipped because the self-signed cert CN is
-        # "mosquitto", not the actual hostname used in local/Docker environments.
-        client.tls_insecure_set(True)
+        if _USE_TLS:
+            if _CA_CERT.strip().upper() == "SYSTEM":
+                client.tls_set_context(ssl.create_default_context())
+            else:
+                client.tls_set(ca_certs=_CA_CERT)
+                # Self-signed local Mosquitto: CN often does not match hostname.
+                client.tls_insecure_set(True)
         client.connect(_HOST, _PORT)
         # loop_start() spins up paho's network thread so connect/subscribe/receive
         # all happen in the background without blocking the asyncio event loop.
