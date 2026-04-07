@@ -74,6 +74,7 @@ def _patch_startup_functions():
         patch("app.shared.api_key_seed.seed_demo_public_api_key"),
         patch("app.shared.threshold_seed.seed_default_thresholds"),
         patch("app.shared.seed_accounts.seed_demo_accounts"),
+        patch("app.services.accounts_service.write_system_audit_log"),
         patch(
             "app.tasks.aggregation_worker.aggregation_worker",
             _noop_worker,

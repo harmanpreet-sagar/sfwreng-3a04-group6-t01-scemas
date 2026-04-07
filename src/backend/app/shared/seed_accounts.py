@@ -58,8 +58,7 @@ def seed_demo_accounts() -> None:
     with db_connection() as conn:
         cursor = conn.cursor()
         for account in DEMO_ACCOUNTS:
-            # Hash is re-generated on every startup (new salt each time).
-            # bcrypt.checkpw in the login flow handles the comparison correctly.
+            # Hash is re-generated on every startup
             password_hash = bcrypt.hashpw(
                 account["password"].encode(), bcrypt.gensalt()
             ).decode()
